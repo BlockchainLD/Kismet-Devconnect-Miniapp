@@ -4,7 +4,7 @@ import { BackgroundLayer } from './components/BackgroundLayer';
 import { CustomCursor } from './components/CustomCursor';
 import { ARTISTS, THEMES, getAllArtworks } from './constants';
 import { ArtistId, Artwork } from './types';
-import { X, ZoomIn, Terminal, Cpu } from 'lucide-react';
+import { X, Cpu } from 'lucide-react';
 import { useFarcaster } from './contexts/FarcasterContext';
 import { updateMetaTags, resetMetaTags } from './utils/metaTags';
 

@@ -51,8 +51,6 @@ export interface ThemeConfig {
   customStyle?: CSSProperties;
 }
 
-export type ViewState = 'MAP' | 'ARTIST' | 'WORK';
-
 export interface FarcasterUser {
   fid: number;
   username?: string;
