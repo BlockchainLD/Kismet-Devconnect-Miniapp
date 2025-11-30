@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, Variants } from 'framer-motion';
 import { Artist, ThemeConfig } from '../types';
-import { ArrowLeft, Instagram, Sparkles, ShoppingBag, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Instagram, ShoppingBag, Maximize2 } from 'lucide-react';
+import { SwapButton } from './SwapButton';
 
 interface ArtistViewProps {
   artist: Artist;
@@ -86,8 +87,8 @@ const OptimizedImage = ({ src, alt, className, style }: { src: string, alt: stri
             <motion.img 
                 src={src}
                 alt={alt}
-                // Updated: use w-auto h-auto with max constraints to preserve aspect ratio
-                className={`block w-auto h-auto max-w-full max-h-full object-contain transition-all duration-700 ease-out ${loaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-95'}`}
+                // Updated: use w-auto h-auto with max-width constraint to preserve aspect ratio and allow full height
+                className={`block w-auto h-auto max-w-full object-contain transition-all duration-700 ease-out ${loaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-95'}`}
                 loading="eager"
                 decoding="async"
                 onLoad={() => setLoaded(true)}
@@ -202,7 +203,7 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`h-full w-full flex flex-col md:flex-row ${theme.textClass} ${theme.fontClass} relative overflow-y-auto md:overflow-hidden`}
+      className={`h-full w-full flex flex-col md:flex-row ${theme.textClass} ${theme.fontClass} relative overflow-y-auto`}
     >
       {/* LAYER 0: Background Watermark */}
       <motion.div 
@@ -215,9 +216,21 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
       </motion.div>
 
       {/* LAYER 2: RIGHT PANEL - Living Gallery (Ordered First on Mobile for Visual Impact) */}
-      <div className="relative w-full md:w-2/3 h-[45vh] md:h-full flex items-center justify-center z-10 overflow-hidden pointer-events-none shrink-0 order-1 md:order-2">
+      <div className="relative w-full md:w-2/3 md:h-full flex flex-col z-10 overflow-y-auto pointer-events-none shrink-0 order-1 md:order-2 min-h-0">
+        {/* Return Button - Positioned above image */}
+        <div className="relative z-20 pointer-events-auto p-4 md:p-6 pb-2 md:pb-4 shrink-0">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 group cursor-pointer px-3 py-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft size={24} className="text-current" />
+            <span className="text-sm font-bold uppercase tracking-widest text-current">Return</span>
+          </button>
+        </div>
+
+        {/* Image Container - Allows full image display */}
         <motion.div 
-            className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
+            className="relative w-full flex items-center justify-center p-4 md:p-12 pt-2 md:pt-4 pb-8 md:pb-12"
             style={{ x: isMobile ? 0 : moveFrontX.get() * -0.5, y: isMobile ? 0 : moveFrontY.get() * -0.5 }}
         >
             <div 
@@ -236,17 +249,17 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="relative z-10 w-full h-full flex items-center justify-center will-change-transform"
+                    className="relative z-10 w-full flex items-center justify-center will-change-transform"
                 >
                     <div 
-                      className="relative cursor-zoom-in group pointer-events-auto"
+                      className="relative cursor-zoom-in group pointer-events-auto flex items-center justify-center"
                       onClick={() => onImageClick && onImageClick(currentWork.imageUrl)}
                     >
                         <OptimizedImage 
                             src={currentWork.imageUrl} 
                             alt={currentWork.title} 
                             className={`
-                                max-h-full max-w-full
+                                w-auto h-auto max-w-full
                                 ${theme.id === 'pinkyblue' ? 'image-pixelated' : ''}
                             `}
                         />
@@ -263,70 +276,56 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
 
       {/* LAYER 1: LEFT PANEL - Info (Ordered Second on Mobile) */}
       <motion.div 
-        className="relative z-[60] p-6 md:p-12 flex flex-col justify-start md:justify-between w-full md:w-1/3 h-auto md:h-full shrink-0 pointer-events-none will-change-transform order-2 md:order-1"
+        className="relative z-[60] p-6 md:p-12 flex flex-col justify-start w-full md:w-1/3 h-auto md:h-full shrink-0 pointer-events-none will-change-transform order-2 md:order-1 overflow-y-auto min-h-0"
         style={{ x: isMobile ? 0 : moveFrontX, y: isMobile ? 0 : moveFrontY }}
       >
-        <div className="pointer-events-auto pb-12 md:pb-0">
-             <button 
-                onClick={onBack}
-                className="flex items-center gap-2 group cursor-pointer mb-4 md:mb-8 px-3 py-1.5 -ml-3 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-             >
-                <ArrowLeft size={24} className="text-current" />
-                <span className="text-sm font-bold uppercase tracking-widest text-current">Return</span>
-             </button>
-             
-             <motion.h1 
-                className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] text-current"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-             >
-                {artist.name}
-             </motion.h1>
+        <div className="pointer-events-auto flex flex-col h-full">
+             <div className="flex-1">
+               <motion.h1 
+                  className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] text-current"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+               >
+                  {artist.name}
+               </motion.h1>
 
-             {/* Infinite Generating Title - NOW WITH ARTWORK TITLE */}
-             <InfiniteTitle text={currentWork.title} />
-             
-             <div className="flex gap-4 mt-2 mb-8">
-               {artist.socials?.instagram && (
-                 <a href={artist.socials.instagram} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                   <Instagram size={18} className="text-current" />
-                 </a>
-               )}
-               {artist.socials?.twitter && (
-                 <a href={artist.socials.twitter} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                   </svg>
-                 </a>
-               )}
-               {artist.socials?.farcaster && (
-                 <a href={artist.socials.farcaster} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                    <svg 
-                      width="18" 
-                      height="18" 
-                      viewBox="0 0 1000 1000" 
-                      fill="currentColor" 
-                      className="text-current"
-                    >
-                      <path d="M257 150C197.907 150 150 197.907 150 257V743C150 802.093 197.907 850 257 850H743C802.093 850 850 802.093 850 743V257C850 197.907 802.093 150 743 150H257ZM680 340V490H560V340H440V490H320V660H680V340Z"/>
-                    </svg>
-                 </a>
-               )}
+               {/* Infinite Generating Title - NOW WITH ARTWORK TITLE */}
+               <InfiniteTitle text={currentWork.title} />
+               
+               <div className="flex gap-4 mt-2 mb-8">
+                 {artist.socials?.instagram && (
+                   <a href={artist.socials.instagram} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                     <Instagram size={18} className="text-current" />
+                   </a>
+                 )}
+                 {artist.socials?.twitter && (
+                   <a href={artist.socials.twitter} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                     </svg>
+                   </a>
+                 )}
+                 {artist.socials?.farcaster && (
+                   <a href={artist.socials.farcaster} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                      <svg 
+                        width="18" 
+                        height="18" 
+                        viewBox="0 0 1000 1000" 
+                        fill="currentColor" 
+                        className="text-current"
+                      >
+                        <path d="M257 150C197.907 150 150 197.907 150 257V743C150 802.093 197.907 850 257 850H743C802.093 850 850 802.093 850 743V257C850 197.907 802.093 150 743 150H257ZM680 340V490H560V340H440V490H320V660H680V340Z"/>
+                      </svg>
+                   </a>
+                 )}
+               </div>
              </div>
 
-             {/* Action Buttons Container */}
-             <div className="flex flex-col gap-3 items-start mt-4">
-                 {/* Buy Creator Coin Button */}
+             {/* Action Buttons Container - Positioned at bottom */}
+             <div className="flex flex-col gap-3 items-start mt-auto pt-8 pb-4">
+                 {/* Buy Creator Coin Button - Uses SwapButton for miniapp, link for web */}
                  {artist.creatorCoinLink && (
-                    <a 
-                      href={artist.creatorCoinLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`px-6 py-3 rounded-full flex items-center gap-3 font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${theme.buttonClass} ${theme.id === 'sato' ? 'border-b-2 border-stone-400 rounded-none px-0 hover:bg-transparent' : ''} ${theme.id === 'noistruct' ? 'bg-white/80 backdrop-blur' : ''}`}
-                    >
-                        <Sparkles size={18} />
-                        <span>Buy Creator Coin</span>
-                    </a>
+                    <SwapButton artist={artist} theme={theme} />
                  )}
 
                  {/* Buy Zora NFT Button (Dynamic based on current artwork) */}

@@ -31,6 +31,7 @@ export interface Artist {
   shortDescription: string; 
   profileImage?: string;
   creatorCoinLink?: string; // Link to buy the creator coin
+  creatorCoinAddress?: string; // Token address for in-app swapping
   mainArtwork: Artwork;
   gallery: Artwork[];
   socials?: SocialLinks;

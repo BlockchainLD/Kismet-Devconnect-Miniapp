@@ -6,6 +6,7 @@ import { ARTISTS, THEMES, getAllArtworks } from './constants';
 import { ArtistId, Artwork } from './types';
 import { X, ZoomIn, Terminal, Cpu } from 'lucide-react';
 import { useFarcaster } from './contexts/FarcasterContext';
+import { updateMetaTags, resetMetaTags } from './utils/metaTags';
 
 // Lazy load heavy components
 const ConstellationMap = lazy(() => import('./components/ConstellationMap').then(module => ({ default: module.ConstellationMap })));
@@ -199,6 +200,18 @@ function App() {
   const [presentationIndex, setPresentationIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  // Handle deep links from shared artist profile URLs (on initial load)
+  useEffect(() => {
+    if (isAppLoaded && !activeArtistId && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const artistParam = params.get('artist') as ArtistId | null;
+      
+      if (artistParam && artistParam in ARTISTS) {
+        setActiveArtistId(artistParam);
+      }
+    }
+  }, [isAppLoaded, activeArtistId]);
+
   // Gather all artworks for presentation mode
   const allArtworks = useMemo(() => {
     const works: { work: Artwork, artistName: string, artistId: ArtistId }[] = [];
@@ -220,11 +233,46 @@ function App() {
 
   const handleArtistSelect = (id: ArtistId) => {
     setActiveArtistId(id);
+    // Update URL for deep linking
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('artist', id);
+      window.history.pushState({}, '', url.toString());
+    }
   };
 
   const handleBackToMap = () => {
     setActiveArtistId(null);
+    // Clear URL parameter when returning to map
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('artist');
+      window.history.pushState({}, '', url.toString());
+    }
   };
+
+  // Update meta tags dynamically when viewing an artist
+  useEffect(() => {
+    if (activeArtistId) {
+      const artist = ARTISTS[activeArtistId];
+      const currentWork = artist.mainArtwork;
+      
+      // Update meta tags with artist-specific information
+      updateMetaTags({
+        title: `${artist.name} | Based House Collection`,
+        description: `${artist.name} - ${artist.shortDescription}. ${currentWork.title}. Explore this artist's work in the Kismet Casa x Basehouse residency exhibition.`,
+        imageUrl: currentWork.imageUrl, // Use the artist's main artwork as the share image
+        url: `https://kismet-miniapp-2025.vercel.app?artist=${artist.id}`, // Deep link to artist profile
+        buttonTitle: `View ${artist.name}`,
+        splashImageUrl: 'https://kismet-miniapp-2025.vercel.app/splash.png',
+        splashBackgroundColor: '#000000',
+        appName: 'Based House Collection'
+      });
+    } else {
+      // Reset to default (home page) meta tags
+      resetMetaTags();
+    }
+  }, [activeArtistId]);
 
   const handleTogglePresentation = () => {
      setIsPresentationMode(!isPresentationMode);

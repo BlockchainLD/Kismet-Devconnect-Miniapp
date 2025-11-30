@@ -30,6 +30,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Pop Gestual Urbano',
     profileImage: 'https://i.postimg.cc/jSntxpYw/qab-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x05c135cf39c17686f9d2a17308db12bc7cbb8c2a',
+    creatorCoinAddress: '0x05c135cf39c17686f9d2a17308db12bc7cbb8c2a',
     mainArtwork: { 
       id: 'qab-1', 
       title: 'Da Kismet Female Energy', 
@@ -49,6 +50,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Etéreo Suave',
     profileImage: 'https://i.postimg.cc/fRSDzGQJ/profile-gressie.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x134f2bfdd5682ed3e8ac43c0866728bf56b2ed82',
+    creatorCoinAddress: '0x134f2bfdd5682ed3e8ac43c0866728bf56b2ed82',
     mainArtwork: { 
       id: 'gressie-1', 
       title: 'House of Chaos', 
@@ -68,6 +70,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Biomecánico / Reliquia Gótica',
     profileImage: 'https://i.postimg.cc/XYB4jR6d/profile-noistruct.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x677402dda2155a34980b7e54e920ff964848c297',
+    creatorCoinAddress: '0x677402dda2155a34980b7e54e920ff964848c297',
     mainArtwork: { 
       id: 'noi-1', 
       title: '17h Maho Shoujo Error Bronze', 
@@ -87,6 +90,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Biomecanoide Tech-Futurista',
     profileImage: 'https://i.postimg.cc/W1qTNBcZ/sulkian-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x61d5a80fcf601b9adb95843f52cceec587acd1a0',
+    creatorCoinAddress: '0x61d5a80fcf601b9adb95843f52cceec587acd1a0',
     mainArtwork: { 
       id: 'sulk-1', 
       title: 'DS-L-Oₓₓₓ I', 
@@ -109,6 +113,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Modo Cielo Kawaii Místico',
     profileImage: 'https://i.postimg.cc/K83xG6h4/profile-kathonejo.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x06fa26fa09cea9dbe412d620538a5e284cf7a115',
+    creatorCoinAddress: '0x06fa26fa09cea9dbe412d620538a5e284cf7a115',
     mainArtwork: { 
       id: 'kath-1', 
       title: 'Collage Kismet Residence', 
@@ -128,6 +133,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Orgánico-Viscoso',
     profileImage: 'https://i.postimg.cc/fRSDzGQV/arbstein-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x059855e99930dd3bacf2d8d147c676d8d7b9139f',
+    creatorCoinAddress: '0x059855e99930dd3bacf2d8d147c676d8d7b9139f',
     mainArtwork: { 
       id: 'arb-1', 
       title: 'Phyloem', 
@@ -147,6 +153,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Cuaderno de Grafito',
     profileImage: 'https://i.postimg.cc/Mpfq6CJj/sato-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x677e936d6b41191213c68c3e25c3eb203a84d56e',
+    creatorCoinAddress: '0x677e936d6b41191213c68c3e25c3eb203a84d56e',
     mainArtwork: { 
       id: 'sato-1', 
       title: 'Untitled', 
@@ -166,6 +173,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Portal Energético',
     profileImage: 'https://i.postimg.cc/Df1GZNFG/alva-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x43f0479f3daa2a095ac12a208d62a20cffeed7d9',
+    creatorCoinAddress: '0x43f0479f3daa2a095ac12a208d62a20cffeed7d9',
     mainArtwork: { 
       id: 'alva-1', 
       title: 'Yellow Birth', 
@@ -185,6 +193,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
     shortDescription: 'Pixel-Sueño Líquido',
     profileImage: 'https://i.postimg.cc/g2LmzCbJ/pinky-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x490e46a791bbc641e23f3637d84d713130b92ef0',
+    creatorCoinAddress: '0x490e46a791bbc641e23f3637d84d713130b92ef0',
     mainArtwork: { 
       id: 'pb-1', 
       title: 'Other Sunlights', 
