@@ -11,6 +11,8 @@
     "version": "1",
     "name": "Based House Collection",
     "homeUrl": "https://kismet-miniapp-2025.vercel.app",
+    "canonicalDomain": "kismet-miniapp-2025.vercel.app",
+    "requiredChains": ["eip155:8453"],
     "iconUrl": "https://kismet-miniapp-2025.vercel.app/icon.png",
     "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
     "splashBackgroundColor": "#000000",
