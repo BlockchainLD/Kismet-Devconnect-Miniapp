@@ -27,8 +27,7 @@
     "tagline": "Explore curated art",
     "ogTitle": "Based House Collection",
     "ogDescription": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists.",
-    "ogImageUrl": "https://kismet-miniapp-2025.vercel.app/image.png",
-    "webhookUrl": "https://kismet-miniapp-2025.vercel.app/api/webhook"
+    "ogImageUrl": "https://kismet-miniapp-2025.vercel.app/image.png"
   },
   "frame": {
     "version": "1",
