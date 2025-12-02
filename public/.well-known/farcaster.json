@@ -5,32 +5,9 @@
     "signature": "Du5V4JgM/duAHExHy4IyrFo9Do7Gk00C770SO04aD7Q4KvoRdTDCaIndGacbX5hdiq6k4k28W2bpSTUCxxorRxs="
   },
   "baseBuilder": {
-    "ownerAddress": "0xFf36299B244cD01C9F41d3145DD684B67370aD7c"
-  },
-  "miniapp": {
-    "version": "1",
-    "name": "Based House Collection",
-    "homeUrl": "https://kismet-miniapp-2025.vercel.app",
-    "canonicalDomain": "kismet-miniapp-2025.vercel.app",
-    "requiredChains": ["eip155:8453"],
-    "iconUrl": "https://kismet-miniapp-2025.vercel.app/icon.png",
-    "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
-    "splashBackgroundColor": "#000000",
-    "subtitle": "Digital art exhibition",
-    "description": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists. A living interface that morphs to match each creator's aesthetic.",
-    "screenshotUrls": [
-      "https://kismet-miniapp-2025.vercel.app/image.png"
-    ],
-    "primaryCategory": "art-creativity",
-    "tags": ["art", "nft", "curation", "exhibition", "base"],
-    "heroImageUrl": "https://kismet-miniapp-2025.vercel.app/image.png",
-    "tagline": "Explore curated art",
-    "ogTitle": "Based House Collection",
-    "ogDescription": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists.",
-    "ogImageUrl": "https://kismet-miniapp-2025.vercel.app/image.png"
+    "ownerAddress": "0x6204405E250db3d8d7A40a0182Eac879fC1aD747"
   },
   "frame": {
-    "version": "1",
     "name": "Based House Collection",
     "iconUrl": "https://kismet-miniapp-2025.vercel.app/icon.png",
     "homeUrl": "https://kismet-miniapp-2025.vercel.app",
@@ -38,9 +15,6 @@
     "buttonTitle": "Explore Kismet",
     "description": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists.",
     "primaryCategory": "art-creativity",
-    "tags": ["art", "nft", "curation", "exhibition", "base"],
-    "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
-    "splashBackgroundColor": "#000000",
-    "webhookUrl": "https://kismet-miniapp-2025.vercel.app/api/webhook"
+    "tags": ["art", "nft", "curation", "exhibition", "base"]
   }
 }
