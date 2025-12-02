@@ -5,7 +5,7 @@
     "signature": "Du5V4JgM/duAHExHy4IyrFo9Do7Gk00C770SO04aD7Q4KvoRdTDCaIndGacbX5hdiq6k4k28W2bpSTUCxxorRxs="
   },
   "baseBuilder": {
-    "ownerAddress": "0x6204405e250db3d8d7a40a0182eac879fc1ad747"
+    "ownerAddress": "0xE65e92a8bc304ad8EBf07da18902587414AC9AE8"
   },
   "miniapp": {
     "version": "1",
@@ -15,6 +15,12 @@
     "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
     "splashBackgroundColor": "#000000",
     "primaryCategory": "art-creativity",
-    "tags": ["art", "nft", "curation", "exhibition", "base"]
+    "tags": [
+      "art",
+      "nft",
+      "curation",
+      "exhibition",
+      "base"
+    ]
   }
 }
