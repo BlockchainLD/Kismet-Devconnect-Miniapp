@@ -174,6 +174,9 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
   const [showHomebaseInfo, setShowHomebaseInfo] = useState(false);
   const [showMemories, setShowMemories] = useState(false);
   
+  // State for continuous orbital rotation
+  const [rotationOffset, setRotationOffset] = useState(0);
+
   const { user } = useFarcaster();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -190,34 +193,52 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
     return all.sort(() => 0.5 - Math.random()).slice(0, 4);
   }, []);
 
+  // --- ORBITAL ANIMATION LOOP ---
+  useEffect(() => {
+    let frameId: number;
+    const animate = () => {
+        // Slow rotation: approx 1 full rotation every 3-4 minutes
+        setRotationOffset(prev => (prev + 0.0003) % (Math.PI * 2));
+        frameId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  // --- NODE POSITION CALCULATOR ---
   const nodePositions = useMemo(() => {
     const positions: Record<string, {x: number, y: number, delay: string}> = {};
     const total = artistIds.length;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const winWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+    const winHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
     
+    // ADJUSTED GEOMETRY
+    // Mobile: Narrow Width (0.30) to add margins.
+    // Mobile: Reduced Height (0.25) to prevent nodes from hitting bottom UI.
+    // Desktop: Slightly wider X but significantly reduced Y and shifted up to avoid bottom buttons.
+    const radiusX = isMobile ? winWidth * 0.30 : Math.min(winWidth, winHeight) * 0.38;
+    const radiusY = isMobile ? winHeight * 0.25 : Math.min(winWidth, winHeight) * 0.28;
+
+    // Shift center up slightly on mobile to clear bottom area
+    // Desktop: Shift up by larger amount to clear Presentation Mode button area
+    const verticalShift = isMobile ? -20 : -45;
+
     artistIds.forEach((id, index) => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      
-      // INCREASED RADIUS to prevent overlap with central UI buttons
-      const baseRadius = isMobile 
-        ? Math.min(window.innerWidth, window.innerHeight) * 0.42 
-        : Math.min(window.innerWidth, window.innerHeight) * 0.36;
-      
       const angleStep = (2 * Math.PI) / total;
-      const baseAngle = index * angleStep;
-      const angleNoise = Math.sin(index * 99) * 0.3;
-      const distNoise = Math.cos(index * 55) * (baseRadius * 0.15);
+      const baseAngle = index * angleStep + rotationOffset; // Add rotation
       
+      const angleNoise = Math.sin(index * 99) * 0.1; // Slight irregularity
       const finalAngle = baseAngle + angleNoise;
-      const finalRadius = baseRadius + distNoise;
 
       positions[id] = {
-        x: Math.cos(finalAngle) * finalRadius,
-        y: Math.sin(finalAngle) * finalRadius,
+        x: Math.cos(finalAngle) * radiusX,
+        y: Math.sin(finalAngle) * radiusY + verticalShift,
         delay: `delay-${(index % 5) + 1}`
       };
     });
     return positions;
-  }, [artistIds]);
+  }, [artistIds, rotationOffset]); // Re-calculates on frame update
 
   useEffect(() => {
     if (isInitialized.current || !canvasRef.current) return;
@@ -303,13 +324,18 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
           animate={{ opacity: 1, scale: 1 }}
           className="relative flex flex-col items-center cursor-pointer group pointer-events-auto max-w-md"
         >
-          {/* Logo with Glow on Hover */}
+          {/* Logo with Glow on Hover AND HALO */}
           <div className="relative" onClick={() => setShowInfo(true)}>
+             {/* THE HALO: Scales up and fades in on hover. Pointer-events-none to let click pass through. */}
+             <div className="absolute -inset-8 md:-inset-10 border border-green-500/60 rounded-full opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500 ease-out shadow-[0_0_30px_rgba(34,197,94,0.2)] pointer-events-none" />
+             
+             {/* Existing Ambient Glow */}
              <div className="absolute inset-0 bg-green-400/0 group-hover:bg-green-400/20 blur-2xl transition-all duration-700 rounded-full" />
+             
              <img 
                 src="https://i.postimg.cc/y65m8qp8/Kismet-Iso-Color-2.png" 
                 alt="Kismet Logo" 
-                className="w-24 md:w-52 object-contain mb-2 mix-blend-screen transition-transform duration-500 group-hover:scale-105 group-hover:brightness-125"
+                className="w-24 md:w-52 object-contain mb-2 mix-blend-screen transition-transform duration-500 group-hover:scale-105 group-hover:brightness-125 relative z-10"
                 width="200"
                 height="200"
             />
@@ -373,51 +399,58 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
               DEVCONNECT BUENOS AIRES 2025
             </h3>
             
-            {/* CTA Hint */}
-             <div className="h-0 group-hover:h-4 overflow-hidden transition-all duration-300" onClick={() => setShowInfo(true)}>
-                <span className="text-[9px] text-green-400 font-bold uppercase tracking-widest mt-2 block animate-pulse">
+            {/* CTA Hint - FIX: Fixed height and Opacity transition to prevent layout shift */}
+             <div className="h-4 w-full flex justify-center items-center overflow-hidden" onClick={() => setShowInfo(true)}>
+                <span className="text-[9px] text-green-400 font-bold uppercase tracking-widest block opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     [ Enter System ]
                 </span>
              </div>
-          </div>
-          
-          <div className="flex flex-col md:flex-row gap-3 items-center pointer-events-none">
-            {onTogglePresentation && (
-               <button 
-                 type="button"
-                 onClick={(e) => {
-                     e.stopPropagation();
-                     onTogglePresentation();
-                 }}
-                 className="cursor-pointer pointer-events-auto px-4 py-2 bg-green-500/5 hover:bg-green-500/15 border border-green-500/10 rounded-full backdrop-blur-sm text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-2 transition-transform active:scale-95 z-50 whitespace-nowrap text-green-400"
-                 title="Auto Presentation Mode"
-               >
-                 <Play size={12} className="text-green-400" />
-                 PRESENTATION
-               </button>
-            )}
           </div>
 
         </motion.div>
       </div>
 
-      {/* LAYER 2.5: Base Footer Branding - ORIGINAL BLUE */}
+      {/* LAYER 2.4: Presentation Button */}
+      <div className="absolute bottom-20 md:bottom-24 z-40 pointer-events-none w-full flex justify-center">
+         {onTogglePresentation && (
+             <motion.button 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2, duration: 0.8 }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePresentation();
+                }}
+                className="cursor-pointer pointer-events-auto px-5 py-2 bg-black/40 hover:bg-green-900/30 border border-green-500/20 hover:border-green-500/50 rounded-full backdrop-blur-md text-[10px] md:text-xs font-mono uppercase tracking-[0.2em] flex items-center gap-3 transition-all duration-300 active:scale-95 text-green-500/80 hover:text-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
+             >
+                <Play size={10} className="fill-current" />
+                <span>Presentation Mode</span>
+             </motion.button>
+         )}
+      </div>
+
+      {/* LAYER 2.5: Base Footer Branding */}
       <div className="absolute bottom-6 md:bottom-8 z-30 pointer-events-none select-none flex flex-col items-center justify-center w-full">
          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 0.8, y: 0 }}
             transition={{ delay: 2, duration: 1 }}
-            className="flex items-center gap-2"
+            className="flex flex-col items-center gap-1"
          >
-            <div className="relative">
-                <div className="absolute inset-0 bg-[#0052FF] blur-sm opacity-50 rounded-none" />
-                <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-[#0052FF] rounded-none relative z-10" />
+            <div className="flex items-center gap-2">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-[#0052FF] blur-sm opacity-50 rounded-none" />
+                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 bg-[#0052FF] rounded-none relative z-10" />
+                </div>
+                <span className="text-xs md:text-sm font-bold text-white tracking-wider font-sans">Base</span>
             </div>
-            <span className="text-xs md:text-sm font-bold text-[#0052FF] tracking-wider font-sans">Base</span>
+            <span className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-widest font-mono">
+                mini app by sulkian
+            </span>
          </motion.div>
       </div>
 
-      {/* LAYER 3: The Artists Nodes */}
+      {/* LAYER 3: The Artists Nodes - Orbiting */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {artistIds.map((id) => {
           const pos = nodePositions[id] || { x: 0, y: 0, delay: '' };
@@ -431,15 +464,17 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
               type="button"
               className="absolute group cursor-pointer z-50 outline-none flex flex-col items-center justify-center pointer-events-auto touch-manipulation"
               initial={{ opacity: 0, scale: 0 }}
+              // Fix: Use animate for x/y to prevent transform conflict with scale
               animate={{ 
-                x: pos.x,
-                y: pos.y,
+                x: pos.x, 
+                y: pos.y, 
                 opacity: isInactive ? 0.4 : 1, 
                 scale: isActive ? 1.1 : 1 
               }}
               transition={{ 
-                  duration: 0.3,
-                  ease: "easeOut"
+                  x: { duration: 0 }, // Sync with frame loop
+                  y: { duration: 0 },
+                  default: { duration: 0.3, ease: "easeOut" }
               }}
               onMouseEnter={() => setHoveredArtist(id)}
               onMouseLeave={() => setHoveredArtist(null)}

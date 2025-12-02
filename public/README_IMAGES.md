@@ -26,3 +26,6 @@ Please add the following image files to this `public/` directory:
   - `index.html` (embed meta tags)
 - The dynamic embed system will use artist artwork images for individual artist profile shares
 
+
+
+
