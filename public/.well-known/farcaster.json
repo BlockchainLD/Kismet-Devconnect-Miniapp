@@ -36,6 +36,9 @@
     "homeUrl": "https://kismet-miniapp-2025.vercel.app",
     "imageUrl": "https://kismet-miniapp-2025.vercel.app/image.png",
     "buttonTitle": "Explore Kismet",
+    "description": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists.",
+    "primaryCategory": "art-creativity",
+    "tags": ["art", "nft", "curation", "exhibition", "base"],
     "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
     "splashBackgroundColor": "#000000",
     "webhookUrl": "https://kismet-miniapp-2025.vercel.app/api/webhook"
