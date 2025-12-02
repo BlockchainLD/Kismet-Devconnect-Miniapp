@@ -142,7 +142,7 @@ const TRANSITION_VARIANTS: Record<string, Variants> = {
   },
   pixel: {
     initial: { opacity: 0 },
-    animate: { opacity: 1, transition: { duration: 0.3, steps: 4 } },
+    animate: { opacity: 1, transition: { duration: 0.3 } },
     exit: { opacity: 0, transition: { duration: 0.3 } }
   }
 };
@@ -223,7 +223,7 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`h-full w-full flex flex-col md:flex-row ${theme.textClass} ${theme.fontClass} relative overflow-y-auto md:overflow-hidden`}
+      className={`h-full w-full flex flex-col md:flex-row ${theme.textClass} ${theme.fontClass} relative overflow-y-auto`}
     >
       {/* LAYER 0: Background Watermark */}
       <motion.div 
@@ -236,10 +236,22 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
       </motion.div>
 
       {/* LAYER 2: RIGHT PANEL - Living Gallery (Ordered First on Mobile for Visual Impact) */}
-      <div className="relative w-full md:w-2/3 h-[45vh] md:h-full flex items-center justify-center z-10 overflow-hidden pointer-events-none shrink-0 order-1 md:order-2">
+      <div className="relative w-full md:w-2/3 md:h-full flex flex-col z-10 overflow-y-auto pointer-events-none shrink-0 order-1 md:order-2 min-h-0">
+        {/* Return Button - Positioned above image */}
+        <div className="relative z-20 pointer-events-auto p-4 md:p-6 pb-2 md:pb-4 shrink-0">
+          <button 
+            onClick={onBack}
+            className="flex items-center gap-2 group cursor-pointer px-3 py-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft size={24} className="text-current" />
+            <span className="text-sm font-bold uppercase tracking-widest text-current">Return</span>
+          </button>
+        </div>
+
+        {/* Image Container - Allows full image display */}
         <motion.div 
             // DYNAMIC PADDING: Add right padding if gallery exists to prevent overlap
-            className={`relative w-full h-full flex items-center justify-center transition-all duration-300 ${hasMultipleWorks ? 'p-4 pr-16 md:p-12 md:pr-28' : 'p-4 md:p-12'}`}
+            className={`relative flex-1 w-full flex items-center justify-center transition-all duration-300 overflow-auto ${hasMultipleWorks ? 'p-4 pr-16 md:p-12 md:pr-28 pt-2 md:pt-4 pb-8 md:pb-12' : 'p-4 md:p-12 pt-2 md:pt-4 pb-8 md:pb-12'}`}
             style={{ x: isMobile ? 0 : moveFrontX.get() * -0.5, y: isMobile ? 0 : moveFrontY.get() * -0.5 }}
         >
             <div 
@@ -258,17 +270,17 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="relative z-10 w-full h-full flex items-center justify-center will-change-transform"
+                    className="relative z-10 w-full flex items-center justify-center will-change-transform"
                 >
                     <div 
-                      className="relative cursor-zoom-in group pointer-events-auto"
+                      className="relative cursor-zoom-in group pointer-events-auto flex items-center justify-center"
                       onClick={() => onImageClick && onImageClick(currentWork.imageUrl)}
                     >
                         <OptimizedImage 
                             src={currentWork.imageUrl} 
                             alt={currentWork.title} 
                             className={`
-                                max-h-full max-w-full
+                                w-auto h-auto max-w-full
                                 ${theme.id === 'pinkyblue' ? 'image-pixelated' : ''}
                             `}
                         />
@@ -313,19 +325,12 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
 
       {/* LAYER 1: LEFT PANEL - Info (Ordered Second on Mobile) */}
       <motion.div 
-        className="relative z-[60] p-6 md:p-12 flex flex-col justify-start md:justify-between w-full md:w-1/3 h-auto md:h-full shrink-0 pointer-events-none will-change-transform order-2 md:order-1"
+        className="relative z-[60] p-6 md:p-12 flex flex-col justify-start w-full md:w-1/3 h-auto md:h-full shrink-0 pointer-events-none will-change-transform order-2 md:order-1 overflow-y-auto min-h-0"
         style={{ x: isMobile ? 0 : moveFrontX, y: isMobile ? 0 : moveFrontY }}
       >
-        <div className="pointer-events-auto pb-12 md:pb-0">
-             <button 
-                onClick={onBack}
-                className="flex items-center gap-2 group cursor-pointer mb-4 md:mb-8 px-3 py-1.5 -ml-3 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-             >
-                <ArrowLeft size={24} className="text-current" />
-                <span className="text-sm font-bold uppercase tracking-widest text-current">Return</span>
-             </button>
-             
-             <motion.h1 
+        <div className="pointer-events-auto flex flex-col h-full">
+             <div className="flex-1">
+               <motion.h1 
                 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] text-current"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -333,54 +338,56 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
                 {artist.name}
              </motion.h1>
 
-               {/* Infinite Generating Title - NOW WITH ARTWORK TITLE */}
-               <InfiniteTitle text={currentWork.title} />
-               
-               <div className="flex gap-4 mt-2 mb-8">
-                 {artist.socials?.instagram && (
-                   <a href={artist.socials.instagram} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                     <Instagram size={18} className="text-current" />
-                   </a>
-                 )}
-                 {artist.socials?.twitter && (
-                   <a href={artist.socials.twitter} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                     </svg>
-                   </a>
-                 )}
-                 {artist.socials?.farcaster && (
-                   <a href={artist.socials.farcaster} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
-                      <svg 
-                        width="18" 
-                        height="18" 
-                        viewBox="0 0 1000 1000" 
-                        fill="currentColor" 
-                        className="text-current"
-                      >
-                        <path d="M257 150C197.907 150 150 197.907 150 257V743C150 802.093 197.907 850 257 850H743C802.093 850 850 802.093 850 743V257C850 197.907 802.093 150 743 150H257ZM680 340V490H560V340H440V490H320V660H680V340Z"/>
-                      </svg>
-                   </a>
-                 )}
-               </div>
-
-               {/* Action Buttons Container */}
-               <div className="flex flex-col gap-3 items-start mt-4">
-                 {/* Buy Creator Coin Button - Uses SwapButton for miniapp, link for web */}
-                 {artist.creatorCoinLink && (
-                    <SwapButton artist={artist} theme={theme} />
-                 )}
-
-                 {/* Buy Zora NFT Button (Dynamic based on current artwork) */}
-                 <a 
-                   href={currentWork.zoraLink || "https://zora.co"}
-                   target="_blank"
-                   rel="noreferrer"
-                   className={`px-6 py-3 rounded-full flex items-center gap-3 font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 border border-current/50 bg-black/5 hover:bg-black/10 ${theme.id === 'sato' ? 'border-b-2 border-transparent hover:border-stone-400 rounded-none px-0 hover:bg-transparent' : ''}`}
-                 >
-                    <ShoppingBag size={18} />
-                    <span>Collect on Zora</span>
+             {/* Infinite Generating Title - NOW WITH ARTWORK TITLE */}
+             <InfiniteTitle text={currentWork.title} />
+             
+             <div className="flex gap-4 mt-2 mb-8">
+               {artist.socials?.instagram && (
+                 <a href={artist.socials.instagram} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                   <Instagram size={18} className="text-current" />
                  </a>
+               )}
+               {artist.socials?.twitter && (
+                 <a href={artist.socials.twitter} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
+                   </svg>
+                 </a>
+               )}
+               {artist.socials?.farcaster && (
+                 <a href={artist.socials.farcaster} target="_blank" rel="noreferrer" className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 ${theme.buttonClass}`}>
+                   <svg 
+                     width="18" 
+                     height="18" 
+                     viewBox="0 0 1000 1000" 
+                     fill="currentColor" 
+                     className="text-current"
+                   >
+                     <path d="M257 150C197.907 150 150 197.907 150 257V743C150 802.093 197.907 850 257 850H743C802.093 850 850 802.093 850 743V257C850 197.907 802.093 150 743 150H257ZM680 340V490H560V340H440V490H320V660H680V340Z"/>
+                   </svg>
+                 </a>
+               )}
+             </div>
+
+             </div>
+
+             {/* Action Buttons Container - Positioned at bottom */}
+             <div className="flex flex-col gap-3 items-start mt-auto pt-8 pb-4">
+               {/* Buy Creator Coin Button - Uses SwapButton for miniapp, link for web */}
+               {artist.creatorCoinLink && (
+                  <SwapButton artist={artist} theme={theme} />
+               )}
+
+               {/* Buy Zora NFT Button (Dynamic based on current artwork) */}
+               <a 
+                 href={currentWork.zoraLink || "https://zora.co"}
+                 target="_blank"
+                 rel="noreferrer"
+                 className={`px-6 py-3 rounded-full flex items-center gap-3 font-bold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 border border-current/50 bg-black/5 hover:bg-black/10 ${theme.id === 'sato' ? 'border-b-2 border-transparent hover:border-stone-400 rounded-none px-0 hover:bg-transparent' : ''}`}
+               >
+                  <ShoppingBag size={18} />
+                  <span>Collect on Zora</span>
+               </a>
              </div>
         </div>
       </motion.div>
