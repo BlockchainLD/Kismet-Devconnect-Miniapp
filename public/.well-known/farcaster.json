@@ -7,13 +7,13 @@
   "baseBuilder": {
     "ownerAddress": "0x6204405E250db3d8d7A40a0182Eac879fC1aD747"
   },
-  "frame": {
+  "miniapp": {
+    "version": "1",
     "name": "Based House Collection",
-    "iconUrl": "https://kismet-miniapp-2025.vercel.app/icon.png",
     "homeUrl": "https://kismet-miniapp-2025.vercel.app",
-    "imageUrl": "https://kismet-miniapp-2025.vercel.app/image.png",
-    "buttonTitle": "Explore Kismet",
-    "description": "An immersive digital exhibition space for Kismet Casa x Basehouse residency artists.",
+    "iconUrl": "https://kismet-miniapp-2025.vercel.app/icon.png",
+    "splashImageUrl": "https://kismet-miniapp-2025.vercel.app/splash.png",
+    "splashBackgroundColor": "#000000",
     "primaryCategory": "art-creativity",
     "tags": ["art", "nft", "curation", "exhibition", "base"]
   }
