@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, Variants } from 'framer-motion';
 import { Artist, ThemeConfig } from '../types';
-import { ArrowLeft, Instagram, ShoppingBag, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Instagram, ShoppingBag, Maximize2, Share2 } from 'lucide-react';
 import { SwapButton } from './SwapButton';
+import { useFarcaster } from '../contexts/FarcasterContext';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 interface ArtistViewProps {
   artist: Artist;
@@ -148,6 +150,7 @@ const TRANSITION_VARIANTS: Record<string, Variants> = {
 };
 
 export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, onImageClick }) => {
+  const { isContextLoaded } = useFarcaster();
   const gallery = useMemo(() => artist.gallery && artist.gallery.length > 0 
     ? [artist.mainArtwork, ...artist.gallery] 
     : [artist.mainArtwork], [artist]);
@@ -155,6 +158,75 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
   const hasMultipleWorks = gallery.length > 1;
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentWork = gallery[currentIndex];
+  const [copied, setCopied] = useState(false);
+
+  // Extract Farcaster username from URL (e.g., https://warpcast.com/qabqabqab -> qabqabqab)
+  const getArtistFarcasterUsername = (): string | null => {
+    if (!artist.socials?.farcaster) return null;
+    const match = artist.socials.farcaster.match(/warpcast\.com\/([^\/\?]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Get artist profile URL for web sharing
+  const getArtistProfileUrl = (): string => {
+    if (typeof window === 'undefined') return '';
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?artist=${artist.id}`;
+  };
+
+  // Handle share button click - compose cast in miniapp, copy URL in web
+  const handleShare = async () => {
+    // Check if we're in miniapp context (Farcaster or Base App)
+    if (isContextLoaded && sdk?.actions?.composeCast) {
+      // Miniapp context: compose cast with artist mention
+      const artistUsername = getArtistFarcasterUsername();
+      
+      if (!artistUsername) {
+        console.warn('No Farcaster username found for artist');
+        return;
+      }
+
+      try {
+        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)`;
+        await sdk.actions.composeCast({
+          text: castText
+        });
+      } catch (error) {
+        console.error('Error composing cast:', error);
+        // Fallback to Warpcast URL
+        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)`;
+        const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}`;
+        window.open(warpcastUrl, '_blank');
+      }
+    } else {
+      // Web context: copy artist profile URL to clipboard
+      const profileUrl = getArtistProfileUrl();
+      
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        setCopied(true);
+        // Reset copied state after 2 seconds
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        // Fallback: try using the older clipboard API
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = profileUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (fallbackError) {
+          console.error('Fallback copy failed:', fallbackError);
+        }
+      }
+    }
+  };
   
   // Ref to track if user has manually interacted
   const hasInteractedRef = useRef(false);
@@ -367,6 +439,23 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
                    </svg>
                  </a>
                )}
+               <button 
+                 onClick={handleShare}
+                 className={`p-2 rounded-full border border-current transition-opacity opacity-70 hover:opacity-100 relative ${theme.buttonClass}`}
+                 aria-label="Share artist profile"
+               >
+                 <Share2 size={18} className="text-current" />
+                 {copied && (
+                   <motion.div
+                     initial={{ opacity: 0, y: -10 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, y: -10 }}
+                     className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 text-white text-xs rounded whitespace-nowrap pointer-events-none z-50"
+                   >
+                     URL copied!
+                   </motion.div>
+                 )}
+               </button>
              </div>
 
              </div>
