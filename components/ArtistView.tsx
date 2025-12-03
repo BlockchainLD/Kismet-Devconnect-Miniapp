@@ -174,11 +174,16 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
     return `${baseUrl}?artist=${artist.id}`;
   };
 
+  // Get miniapp URL for artist profile (for deep linking in casts)
+  const getMiniappArtistUrl = (): string => {
+    return `https://kismet-miniapp-2025.vercel.app?artist=${artist.id}`;
+  };
+
   // Handle share button click - compose cast in miniapp, copy URL in web
   const handleShare = async () => {
     // Check if we're in miniapp context (Farcaster or Base App)
     if (isContextLoaded && sdk?.actions?.composeCast) {
-      // Miniapp context: compose cast with artist mention
+      // Miniapp context: compose cast with artist mention and miniapp link
       const artistUsername = getArtistFarcasterUsername();
       
       if (!artistUsername) {
@@ -187,14 +192,16 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
       }
 
       try {
-        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)`;
+        const miniappUrl = getMiniappArtistUrl();
+        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)\n\n${miniappUrl}`;
         await sdk.actions.composeCast({
           text: castText
         });
       } catch (error) {
         console.error('Error composing cast:', error);
         // Fallback to Warpcast URL
-        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)`;
+        const miniappUrl = getMiniappArtistUrl();
+        const castText = `Enjoy @${artistUsername} artwork created during Based House Devconnect (@kismet x @homebase)\n\n${miniappUrl}`;
         const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}`;
         window.open(warpcastUrl, '_blank');
       }
