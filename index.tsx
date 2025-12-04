@@ -3,43 +3,29 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { FarcasterProvider } from './contexts/FarcasterContext';
 import { WagmiProvider } from './providers/WagmiProvider';
-import sdk from '@farcaster/frame-sdk';
+import { sdk } from '@farcaster/miniapp-sdk';
 
-// Call ready() as early as possible to dismiss splash screen on desktop Farcaster
-// This is critical - desktop Farcaster may not show the app until ready() is called
+// Call ready() as early as possible to dismiss splash screen
+// This is a backup call in case the one in FarcasterContext doesn't work
 if (typeof window !== 'undefined') {
-  // Call immediately when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      try {
-        if (sdk?.actions?.ready) {
-          sdk.actions.ready();
-        }
-      } catch (e) {
-        console.log('Error calling ready() on DOMContentLoaded:', e);
-      }
-    });
-  } else {
-    // DOM already loaded, call immediately
+  // Try calling ready() immediately
+  const tryReady = async () => {
     try {
       if (sdk?.actions?.ready) {
-        sdk.actions.ready();
+        await sdk.actions.ready();
+        console.log('Early ready() call succeeded');
       }
     } catch (e) {
-      console.log('Error calling ready() immediately:', e);
+      console.log('Early ready() call failed:', e);
     }
-  }
-  
-  // Also call after a short delay as backup
-  setTimeout(() => {
-    try {
-      if (sdk?.actions?.ready) {
-        sdk.actions.ready();
-      }
-    } catch (e) {
-      // Ignore errors in backup call
-    }
-  }, 100);
+  };
+
+  // Call immediately if SDK is available
+  tryReady();
+
+  // Also try after a short delay as backup
+  setTimeout(tryReady, 50);
+  setTimeout(tryReady, 200);
 }
 
 const rootElement = document.getElementById('root');

@@ -17,20 +17,32 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isContextLoaded, setIsContextLoaded] = useState(false);
 
   useEffect(() => {
-    // Call ready() immediately to dismiss splash screen
+    // Call ready() to dismiss splash screen
     // According to docs: "You should call ready as soon as possible while avoiding jitter and content reflows"
     // "If you're using React, call ready inside a useEffect hook to prevent it from running on every re-render"
-    const callReady = async () => {
-      try {
-        if (sdk?.actions?.ready) {
-          await sdk.actions.ready();
+    const callReady = async (retries = 3) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          // Check if SDK and actions are available
+          if (sdk && sdk.actions && sdk.actions.ready) {
+            await sdk.actions.ready();
+            console.log('ready() called successfully');
+            return; // Success, exit
+          } else {
+            console.log(`ready() not available, attempt ${i + 1}/${retries}`);
+          }
+        } catch (readyError) {
+          console.log(`Error calling ready() attempt ${i + 1}/${retries}:`, readyError);
         }
-      } catch (readyError) {
-        console.log('Error calling ready():', readyError);
+        
+        // Wait before retrying (except on last attempt)
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
+        }
       }
     };
 
-    // Call ready() immediately when component mounts
+    // Call ready() immediately when component mounts, with retries
     callReady();
 
     const load = async () => {
