@@ -137,7 +137,6 @@
   <body class="bg-black text-white antialiased">
     <div id="root" class="h-full w-full"></div>
     <!-- Call ready() immediately via inline script - critical for desktop Farcaster -->
-    <!-- Support both miniapp-sdk and frame-sdk since desktop might use frames -->
     <script type="module">
       (async function() {
         console.log('=== INLINE SCRIPT START ===');
@@ -146,58 +145,36 @@
         
         let readyCalled = false;
         
-        const callReady = async (sdk, sdkName) => {
+        const callReady = async (sdk) => {
           if (readyCalled) return;
           try {
             if (sdk?.actions?.ready) {
               await sdk.actions.ready();
               readyCalled = true;
-              console.log(`✅ ready() called successfully using ${sdkName}`);
+              console.log('✅ ready() called successfully');
               return true;
             }
           } catch (e) {
-            console.error(`❌ ready() failed with ${sdkName}:`, e);
+            console.error('❌ ready() failed:', e);
           }
           return false;
         };
         
-        // Strategy 1: Try miniapp-sdk (for miniapps)
+        // Try miniapp-sdk
         try {
           const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
           console.log('Miniapp SDK imported:', !!sdk, !!sdk?.actions, !!sdk?.actions?.ready);
-          if (await callReady(sdk, 'miniapp-sdk')) return;
+          if (await callReady(sdk)) return;
         } catch (e) {
           console.log('Miniapp SDK import failed:', e.message);
         }
         
-        // Strategy 2: Try frame-sdk (for frames/desktop)
-        try {
-          const frameSdk = await import('https://esm.sh/@farcaster/frame-sdk@0.0.32');
-          const sdk = frameSdk.default || frameSdk;
-          console.log('Frame SDK imported:', !!sdk, !!sdk?.actions, !!sdk?.actions?.ready);
-          if (await callReady(sdk, 'frame-sdk')) return;
-        } catch (e) {
-          console.log('Frame SDK import failed:', e.message);
-        }
-        
-        // Strategy 3: Try postMessage fallback (for iframe contexts)
-        if (!readyCalled && window.parent !== window) {
-          console.log('Running in iframe, trying postMessage fallback');
-          try {
-            window.parent.postMessage({ type: 'farcaster:ready', source: 'miniapp' }, '*');
-            window.parent.postMessage({ type: 'ready', action: 'ready' }, '*');
-            console.log('✅ postMessage sent (multiple formats)');
-          } catch (e) {
-            console.error('❌ postMessage failed:', e);
-          }
-        }
-        
-        // Strategy 4: Retry after delay
+        // Retry after delay
         setTimeout(async () => {
           if (!readyCalled) {
             try {
               const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
-              await callReady(sdk, 'miniapp-sdk (retry)');
+              await callReady(sdk);
             } catch (e) {
               console.error('Delayed retry failed:', e);
             }

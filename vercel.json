@@ -23,8 +23,8 @@
           "value": "nosniff"
         },
         {
-          "key": "X-Frame-Options",
-          "value": "DENY"
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors https://farcaster.xyz https://*.farcaster.xyz https://warpcast.com https://*.warpcast.com https://base.org https://*.base.org; connect-src https://*.walletconnect.com https://explorer-api.walletconnect.com https://ws.farcaster.xyz wss://ws.farcaster.xyz https://esm.sh https://aistudiocdn.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://aistudiocdn.com; style-src 'self' 'unsafe-inline' https://aistudiocdn.com;"
         },
         {
           "key": "X-XSS-Protection",
