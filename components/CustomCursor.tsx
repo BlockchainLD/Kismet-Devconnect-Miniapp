@@ -69,9 +69,12 @@ export const CustomCursor = () => {
       setIsHovering(!!isInteractive);
     };
 
-    window.addEventListener('mousemove', moveCursor);
+    // Listen on both window and document to ensure we catch all mouse movements
+    window.addEventListener('mousemove', moveCursor, { passive: true });
+    document.addEventListener('mousemove', moveCursor, { passive: true });
     return () => {
       window.removeEventListener('mousemove', moveCursor);
+      document.removeEventListener('mousemove', moveCursor);
       clearTimeout(timeout);
     };
   }, [cursorX, cursorY]);
@@ -79,10 +82,10 @@ export const CustomCursor = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden hidden md:block">
+    <div className="fixed inset-0 pointer-events-none z-[99999] overflow-hidden hidden md:block" style={{ isolation: 'isolate' }}>
       {/* Main Dot (Core) */}
       <motion.div
-        className="absolute w-2 h-2 bg-white rounded-full mix-blend-difference"
+        className="absolute w-2 h-2 bg-white rounded-full mix-blend-difference will-change-transform"
         style={{
           x: cursorX,
           y: cursorY,
@@ -93,7 +96,7 @@ export const CustomCursor = () => {
 
       {/* Liquid Aura (Follower) */}
       <motion.div
-        className="absolute w-12 h-12 border border-white/40 rounded-full mix-blend-difference"
+        className="absolute w-12 h-12 border border-white/40 rounded-full mix-blend-difference will-change-transform"
         style={{
           x: cursorXSpring,
           y: cursorYSpring,
