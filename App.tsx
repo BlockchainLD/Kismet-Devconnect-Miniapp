@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy, useEffect, useMemo } from 'react';
+import React, { useState, Suspense, lazy, useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { CustomCursor } from './components/CustomCursor';
@@ -25,6 +25,14 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
   const { user, isContextLoaded } = useFarcaster();
+  const userRef = useRef(user);
+  const isContextLoadedRef = useRef(isContextLoaded);
+  
+  // Keep refs in sync with latest values
+  useEffect(() => {
+    userRef.current = user;
+    isContextLoadedRef.current = isContextLoaded;
+  }, [user, isContextLoaded]);
   
   // Cybernetic boot logs - Updated with Base Network references
   const systemLogs = [
@@ -51,6 +59,7 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
     const interval = 30; 
     const steps = duration / interval;
     let currentStep = 0;
+    let userLogInjected = false;
 
     const timer = setInterval(() => {
       currentStep++;
@@ -64,14 +73,16 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
          setLogs(prev => [`[${timestamp}] ${randomLog}`, ...prev].slice(0, 6));
       }
 
-      // Inject Farcaster User log if detected
-      if (currentStep === Math.floor(steps * 0.5) && isContextLoaded && user) {
+      // Inject Farcaster User log if detected (only once, using refs for latest values)
+      if (!userLogInjected && currentStep === Math.floor(steps * 0.5) && isContextLoadedRef.current && userRef.current) {
+        userLogInjected = true;
+        const currentUser = userRef.current;
         const timestamp = new Date().toISOString().split('T')[1].slice(0,8);
-        setLogs(prev => [`[${timestamp}] ID_VERIFIED: @${user.username?.toUpperCase()}`, ...prev].slice(0, 6));
+        setLogs(prev => [`[${timestamp}] ID_VERIFIED: @${currentUser.username?.toUpperCase()}`, ...prev].slice(0, 6));
         
         // Inject Wallet Log if available
-        if (user.verifications?.[0] || user.custodyAddress) {
-             const addr = user.verifications?.[0] || user.custodyAddress;
+        if (currentUser.verifications?.[0] || currentUser.custodyAddress) {
+             const addr = currentUser.verifications?.[0] || currentUser.custodyAddress;
              const shortAddr = addr ? `${addr.slice(0,6)}...${addr.slice(-4)}` : '0x...';
              setTimeout(() => {
                  setLogs(prev => [`[${timestamp}] WALLET_CONNECTED: ${shortAddr}`, ...prev].slice(0, 6));
@@ -85,8 +96,17 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
       }
     }, interval);
 
-    return () => clearInterval(timer);
-  }, [isContextLoaded, user]);
+    // Safety timeout: always complete after max 6 seconds regardless of progress
+    const safetyTimeout = setTimeout(() => {
+      clearInterval(timer);
+      onComplete();
+    }, 6000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(safetyTimeout);
+    };
+  }, []); // Empty deps - only run once on mount, don't restart on context changes
 
   return (
     <motion.div 
