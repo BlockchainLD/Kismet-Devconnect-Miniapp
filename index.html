@@ -130,13 +130,27 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@farcaster/frame-sdk": "https://esm.sh/@farcaster/frame-sdk@0.0.32"
+    "@farcaster/miniapp-sdk": "https://esm.sh/@farcaster/miniapp-sdk@^0.2.1"
   }
 }
 </script>
 </head>
   <body class="bg-black text-white antialiased">
     <div id="root" class="h-full w-full"></div>
+    <!-- Call ready() immediately via inline script - critical for desktop Farcaster -->
+    <script type="module">
+      import { sdk } from '@farcaster/miniapp-sdk';
+      // Call ready() immediately when SDK loads - before React renders
+      if (sdk?.actions?.ready) {
+        sdk.actions.ready().catch(e => console.log('Inline ready() call failed:', e));
+      }
+      // Also try after a tiny delay as backup
+      setTimeout(() => {
+        if (sdk?.actions?.ready) {
+          sdk.actions.ready().catch(() => {});
+        }
+      }, 10);
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -20,29 +20,35 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Call ready() to dismiss splash screen
     // According to docs: "You should call ready as soon as possible while avoiding jitter and content reflows"
     // "If you're using React, call ready inside a useEffect hook to prevent it from running on every re-render"
-    const callReady = async (retries = 3) => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          // Check if SDK and actions are available
-          if (sdk && sdk.actions && sdk.actions.ready) {
-            await sdk.actions.ready();
-            console.log('ready() called successfully');
-            return; // Success, exit
-          } else {
-            console.log(`ready() not available, attempt ${i + 1}/${retries}`);
-          }
-        } catch (readyError) {
-          console.log(`Error calling ready() attempt ${i + 1}/${retries}:`, readyError);
+    let readyCalled = false;
+    
+    const callReady = async () => {
+      if (readyCalled) return; // Prevent multiple calls
+      
+      try {
+        // Check if SDK and actions are available
+        if (sdk && sdk.actions && sdk.actions.ready) {
+          await sdk.actions.ready();
+          readyCalled = true;
+          console.log('ready() called successfully in FarcasterContext');
+        } else {
+          console.log('SDK not available yet, will retry');
+          // Retry after a short delay
+          setTimeout(() => {
+            if (!readyCalled && sdk?.actions?.ready) {
+              sdk.actions.ready().then(() => {
+                readyCalled = true;
+                console.log('ready() called on retry');
+              }).catch(e => console.log('Retry ready() failed:', e));
+            }
+          }, 100);
         }
-        
-        // Wait before retrying (except on last attempt)
-        if (i < retries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
-        }
+      } catch (readyError) {
+        console.log('Error calling ready():', readyError);
       }
     };
 
-    // Call ready() immediately when component mounts, with retries
+    // Call ready() immediately when component mounts
     callReady();
 
     const load = async () => {
@@ -86,7 +92,7 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!isLoaded) {
       load();
     }
-  }, [isLoaded]);
+  }, []); // Empty deps - only run once on mount
 
   return (
     <FarcasterContext.Provider value={{ user, isLoaded, isContextLoaded, isConnected: !!user }}>

@@ -92,17 +92,6 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
 
       if (currentStep >= steps) {
         clearInterval(timer);
-        // Call ready() when loader completes to dismiss splash screen
-        // This ensures ready() is called when the interface is actually ready
-        import('@farcaster/miniapp-sdk').then(({ sdk }) => {
-          try {
-            if (sdk?.actions?.ready) {
-              sdk.actions.ready().catch(e => console.log('Error calling ready() after loader:', e));
-            }
-          } catch (e) {
-            console.log('Error calling ready() after loader:', e);
-          }
-        });
         setTimeout(onComplete, 500); // Slight delay at 100%
       }
     }, interval);
@@ -110,16 +99,6 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
     // Safety timeout: always complete after max 6 seconds regardless of progress
     const safetyTimeout = setTimeout(() => {
       clearInterval(timer);
-      // Call ready() on safety timeout as well
-      import('@farcaster/miniapp-sdk').then(({ sdk }) => {
-        try {
-          if (sdk?.actions?.ready) {
-            sdk.actions.ready().catch(e => console.log('Error calling ready() on timeout:', e));
-          }
-        } catch (e) {
-          console.log('Error calling ready() on timeout:', e);
-        }
-      });
       onComplete();
     }, 6000);
 
