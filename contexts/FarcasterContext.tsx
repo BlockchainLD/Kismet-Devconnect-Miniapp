@@ -2,6 +2,23 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import sdk from '@farcaster/frame-sdk';
 import { FarcasterUser, FarcasterContextType } from '../types';
 
+// Call ready() immediately when SDK loads - critical for desktop Farcaster
+// This dismisses the splash screen as soon as possible
+try {
+  if (typeof window !== 'undefined' && sdk?.actions?.ready) {
+    // Use setTimeout to ensure it's called after the page is ready
+    setTimeout(() => {
+      try {
+        sdk.actions.ready();
+      } catch (e) {
+        console.log('Early ready() call failed:', e);
+      }
+    }, 0);
+  }
+} catch (e) {
+  console.log('Error setting up early ready() call:', e);
+}
+
 const FarcasterContext = createContext<FarcasterContextType>({
   user: null,
   isLoaded: false,
@@ -17,6 +34,16 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isContextLoaded, setIsContextLoaded] = useState(false);
 
   useEffect(() => {
+    // Call ready() immediately to dismiss splash screen on desktop Farcaster
+    // This must be called early, before waiting for context
+    try {
+      if (sdk?.actions?.ready) {
+        sdk.actions.ready();
+      }
+    } catch (readyError) {
+      console.log('Error calling ready() immediately:', readyError);
+    }
+
     const load = async () => {
       try {
         // Check if SDK is available
@@ -27,7 +54,7 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Add timeout for desktop Farcaster compatibility (some environments may hang)
         const contextPromise = sdk.context;
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Context load timeout')), 5000)
+          setTimeout(() => reject(new Error('Context load timeout')), 3000)
         );
         
         // Attempt to load context - this promise resolves when running in a Frame
@@ -51,15 +78,6 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // SDK load failed, timeout, or not in frame context - expected behavior
         console.log('Farcaster SDK context not available:', err);
       } finally {
-        // Always call ready() to signal the app is loaded, even if context failed
-        // This is critical for desktop Farcaster compatibility
-        try {
-          if (sdk?.actions?.ready) {
-            sdk.actions.ready();
-          }
-        } catch (readyError) {
-          console.log('Error calling ready():', readyError);
-        }
         setIsLoaded(true);
       }
     };
