@@ -88,7 +88,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!htmlFound) {
       // Last resort: fetch from a CDN URL that won't trigger our function
       // Use the raw deployment URL to avoid circular dependency
-      const deploymentUrl = process.env.VERCEL_URL || baseUrl;
+      const deploymentUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : baseUrl;
       const htmlUrl = `${deploymentUrl}/index.html`;
       console.log('Fetching HTML from URL:', htmlUrl);
       const htmlResponse = await fetch(htmlUrl, {
