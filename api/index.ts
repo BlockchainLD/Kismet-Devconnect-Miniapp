@@ -56,19 +56,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Log for debugging
   console.log('API handler called with artist param:', artistParam);
   
-  // If no artist parameter, serve default HTML (don't redirect, just serve static)
-  if (!artistParam || !artistData[artistParam]) {
-    // For root URL without artist param, we want to serve the default HTML
-    // But we need to fetch it first
+  // Always fetch the HTML first
+  let html: string;
+  try {
+    // First, try to read from the static file system (if available in Vercel)
     try {
-      const htmlResponse = await fetch(`${baseUrl}/index.html`);
-      const html = await htmlResponse.text();
-      res.setHeader('Content-Type', 'text/html');
-      return res.send(html);
-    } catch (error) {
-      console.error('Error fetching default HTML:', error);
-      return res.redirect(302, '/index.html');
+      const fs = await import('fs');
+      const path = await import('path');
+      const htmlPath = path.join(process.cwd(), 'dist', 'index.html');
+      html = fs.readFileSync(htmlPath, 'utf-8');
+    } catch (fsError) {
+      // Fallback: fetch from production URL (but use a different path to avoid circular dependency)
+      // Try fetching from the static asset directly
+      const htmlUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}/index.html`
+        : `${baseUrl}/index.html`;
+      const htmlResponse = await fetch(htmlUrl);
+      if (!htmlResponse.ok) {
+        throw new Error(`Failed to fetch HTML: ${htmlResponse.status}`);
+      }
+      html = await htmlResponse.text();
     }
+  } catch (error) {
+    console.error('Error fetching HTML:', error);
+    // Last resort: redirect to static file
+    return res.redirect(302, '/index.html');
+  }
+  
+  // If no artist parameter, serve default HTML as-is
+  if (!artistParam || !artistData[artistParam]) {
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
   }
   
   const artist = artistData[artistParam];
