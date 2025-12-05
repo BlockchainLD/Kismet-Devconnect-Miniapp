@@ -111,28 +111,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const frameEmbed = JSON.parse(JSON.stringify(miniappEmbed));
   frameEmbed.button.action.type = "launch_frame";
   
-  // Fetch the original HTML and modify meta tags
-  // Try to fetch from the static file, with fallback to production URL
-  let html: string;
-  
+  // HTML is already fetched above, now modify it
   try {
-    // First, try to read from the static file system (if available in Vercel)
-    // If that fails, fetch from the production URL
-    try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const htmlPath = path.join(process.cwd(), 'dist', 'index.html');
-      html = fs.readFileSync(htmlPath, 'utf-8');
-    } catch (fsError) {
-      // Fallback: fetch from production URL
-      const htmlUrl = `${baseUrl}/index.html`;
-      const htmlResponse = await fetch(htmlUrl);
-      html = await htmlResponse.text();
-    }
-    
     // Escape JSON for HTML attributes
     // The HTML uses single quotes: content='...', so we need to escape single quotes in the JSON
-    // But the JSON itself uses double quotes, so we just need to escape any single quotes that might appear
     const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;");
     const frameEmbedJson = JSON.stringify(frameEmbed).replace(/'/g, "&#39;");
     
