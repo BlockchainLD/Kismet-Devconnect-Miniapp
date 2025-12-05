@@ -10,8 +10,18 @@
       "destination": "/.well-known/$1"
     },
     {
-      "source": "/",
+      "source": "/api/index",
       "destination": "/api/index"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index",
+      "has": [
+        {
+          "type": "query",
+          "key": "artist"
+        }
+      ]
     },
     {
       "source": "/(.*)",
