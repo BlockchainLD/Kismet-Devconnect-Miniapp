@@ -220,17 +220,57 @@ function App() {
   const [presentationIndex, setPresentationIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  // Handle deep links from shared artist profile URLs (on initial load)
+  // Handle deep links from shared artist profile URLs
+  // Check URL parameter early and update meta tags immediately for proper embed previews
   useEffect(() => {
-    if (isAppLoaded && !activeArtistId && typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+    
+    const params = new URLSearchParams(window.location.search);
+    const artistParam = params.get('artist') as ArtistId | null;
+    
+    // If URL has artist parameter, update meta tags immediately (even before app loads)
+    // This ensures embed previews show the correct artwork
+    if (artistParam && artistParam in ARTISTS) {
+      const artist = ARTISTS[artistParam];
+      const currentWork = artist.mainArtwork;
+      
+      // Update meta tags immediately for embed preview
+      updateMetaTags({
+        title: `${artist.name} | Based House Collection`,
+        description: `${artist.name} - ${artist.shortDescription}. ${currentWork.title}. Explore this artist's work in the Kismet Casa x Basehouse residency exhibition.`,
+        imageUrl: currentWork.imageUrl,
+        url: `https://kismet-miniapp-2025.vercel.app?artist=${artist.id}`,
+        buttonTitle: `View ${artist.name}`,
+        splashImageUrl: 'https://kismet-miniapp-2025.vercel.app/splash.png',
+        splashBackgroundColor: '#000000',
+        appName: 'Based House Collection'
+      });
+      
+      // Navigate to artist once app is loaded
+      if (isAppLoaded && artistParam !== activeArtistId) {
+        setActiveArtistId(artistParam);
+      }
+    }
+  }, [isAppLoaded, activeArtistId]);
+
+  // Also listen for browser back/forward navigation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const artistParam = params.get('artist') as ArtistId | null;
       
       if (artistParam && artistParam in ARTISTS) {
         setActiveArtistId(artistParam);
+      } else if (!artistParam) {
+        setActiveArtistId(null);
       }
-    }
-  }, [isAppLoaded, activeArtistId]);
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Gather all artworks for presentation mode
   const allArtworks = useMemo(() => {

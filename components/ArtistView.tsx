@@ -193,7 +193,7 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
 
       try {
         const miniappUrl = getMiniappArtistUrl().trim();
-        const castText = `Check out the artwork created by @${artistUsername} during Based House Devconnect, a residency by @kismet & @homebase\n\n${miniappUrl}`.trim();
+        const castText = `artwork by @${artistUsername}\n\nminiapp by @sulkian\n\ncreated during Based House Devconnect, a residency by @kismet & @homebase\n\n${miniappUrl}`.trim();
         await sdk.actions.composeCast({
           text: castText
         });
@@ -201,7 +201,7 @@ export const ArtistView: React.FC<ArtistViewProps> = ({ artist, theme, onBack, o
         console.error('Error composing cast:', error);
         // Fallback to Warpcast URL
         const miniappUrl = getMiniappArtistUrl().trim();
-        const castText = `Check out the artwork created by @${artistUsername} during Based House Devconnect, a residency by @kismet & @homebase\n\n${miniappUrl}`.trim();
+        const castText = `artwork by @${artistUsername}\n\nminiapp by @sulkian\n\ncreated during Based House Devconnect, a residency by @kismet & @homebase\n\n${miniappUrl}`.trim();
         const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}`;
         window.open(warpcastUrl, '_blank');
       }
