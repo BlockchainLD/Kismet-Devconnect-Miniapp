@@ -81,11 +81,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   frameEmbed.button.action.type = "launch_frame";
   
   // Fetch the original HTML and modify meta tags
-  const htmlUrl = `${baseUrl}/index.html`;
+  // Try to fetch from the static file, with fallback to production URL
+  let html: string;
   
   try {
-    const htmlResponse = await fetch(htmlUrl);
-    let html = await htmlResponse.text();
+    // First, try to read from the static file system (if available in Vercel)
+    // If that fails, fetch from the production URL
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      const htmlPath = path.join(process.cwd(), 'dist', 'index.html');
+      html = fs.readFileSync(htmlPath, 'utf-8');
+    } catch (fsError) {
+      // Fallback: fetch from production URL
+      const htmlUrl = `${baseUrl}/index.html`;
+      const htmlResponse = await fetch(htmlUrl);
+      html = await htmlResponse.text();
+    }
     
     // Escape JSON for HTML attributes
     const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
