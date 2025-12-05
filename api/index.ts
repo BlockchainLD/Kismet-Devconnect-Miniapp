@@ -57,21 +57,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('API handler called with artist param:', artistParam);
   
   // Always fetch the HTML first
+  // In Vercel, static files are in the .vercel/output/static directory or we can read from dist
   let html: string;
   try {
-    // First, try to read from the static file system (if available in Vercel)
-    try {
-      const fs = await import('fs');
-      const path = await import('path');
-      const htmlPath = path.join(process.cwd(), 'dist', 'index.html');
-      html = fs.readFileSync(htmlPath, 'utf-8');
-    } catch (fsError) {
-      // Fallback: fetch from production URL (but use a different path to avoid circular dependency)
-      // Try fetching from the static asset directly
-      const htmlUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}/index.html`
-        : `${baseUrl}/index.html`;
-      const htmlResponse = await fetch(htmlUrl);
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    // Try multiple possible paths for the HTML file
+    const possiblePaths = [
+      path.join(process.cwd(), 'dist', 'index.html'),
+      path.join(process.cwd(), '.vercel', 'output', 'static', 'index.html'),
+      path.join('/var/task', 'dist', 'index.html'), // Vercel serverless function path
+    ];
+    
+    let htmlFound = false;
+    for (const htmlPath of possiblePaths) {
+      try {
+        if (fs.existsSync(htmlPath)) {
+          html = fs.readFileSync(htmlPath, 'utf-8');
+          htmlFound = true;
+          console.log('Successfully read HTML from:', htmlPath);
+          break;
+        }
+      } catch (e) {
+        // Try next path
+        continue;
+      }
+    }
+    
+    if (!htmlFound) {
+      // Last resort: fetch from a CDN URL that won't trigger our function
+      // Use the raw deployment URL to avoid circular dependency
+      const deploymentUrl = process.env.VERCEL_URL || baseUrl;
+      const htmlUrl = `${deploymentUrl}/index.html`;
+      console.log('Fetching HTML from URL:', htmlUrl);
+      const htmlResponse = await fetch(htmlUrl, {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       if (!htmlResponse.ok) {
         throw new Error(`Failed to fetch HTML: ${htmlResponse.status}`);
       }
@@ -79,8 +103,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (error) {
     console.error('Error fetching HTML:', error);
-    // Last resort: redirect to static file
-    return res.redirect(302, '/index.html');
+    // Don't redirect - return error response so we can debug
+    res.status(500).json({ 
+      error: 'Failed to load HTML', 
+      message: error instanceof Error ? error.message : 'Unknown error',
+      artistParam 
+    });
+    return;
   }
   
   // If no artist parameter, serve default HTML as-is
