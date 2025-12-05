@@ -22,6 +22,140 @@
     <meta name="twitter:title" content="Based House Collection" />
     <meta name="twitter:description" content="An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists." />
     <meta name="twitter:image" content="https://kismet-miniapp-2025.vercel.app/image.png" />
+    
+    <!-- Early script to update meta tags for artist profile embeds (runs before React) -->
+    <script>
+      (function() {
+        // Check for artist parameter in URL
+        const params = new URLSearchParams(window.location.search);
+        const artistParam = params.get('artist');
+        
+        // Artist data mapping (for embed previews)
+        const artistData = {
+          'qab': {
+            name: 'QABQABQAB',
+            imageUrl: 'https://i.postimg.cc/RZSqXtGT/qab-da-kismet-female-energy.png',
+            description: 'QABQABQAB - Pop Gestual Urbano. Da Kismet Female Energy.'
+          },
+          'gressie': {
+            name: 'GRESSIE',
+            imageUrl: 'https://i.postimg.cc/nhFM0mT4/gressie-house-of-chaos.png',
+            description: 'GRESSIE - Etéreo Suave. House of Chaos.'
+          },
+          'noistruct': {
+            name: 'NOISTRUCT',
+            imageUrl: 'https://i.postimg.cc/mgLh89VQ/noistruct-17h-maho-shoujo-error-bronze.png',
+            description: 'NOISTRUCT - Biomecánico / Reliquia Gótica. 17h Maho Shoujo Error Bronze.'
+          },
+          'sulkian': {
+            name: 'SULKIAN CORE',
+            imageUrl: 'https://i.postimg.cc/mgLh89V6/sulkian-DS-L-Oₓₓₓ-1.png',
+            description: 'SULKIAN CORE - Biomecanoide Tech-Futurista. DS-L-Oₓₓₓ I.'
+          },
+          'kathonejo': {
+            name: 'KATHONEJO',
+            imageUrl: 'https://i.postimg.cc/HkYjBM3X/kathonejo-Collage-Kismet-residence.png',
+            description: 'KATHONEJO - Modo Cielo Kawaii Místico. Collage Kismet Residence.'
+          },
+          'arbstein': {
+            name: 'ARBSTEIN',
+            imageUrl: 'https://i.postimg.cc/13m4JFMq/arbstein-phyloem.png',
+            description: 'ARBSTEIN - Orgánico-Viscoso. Phyloem.'
+          },
+          'sato': {
+            name: 'SATO',
+            imageUrl: 'https://i.postimg.cc/Vkf5Dt4W/sato-Untitled.png',
+            description: 'SATO - Cuaderno de Grafito. Untitled.'
+          },
+          'alva': {
+            name: 'ALVABRINA',
+            imageUrl: 'https://i.postimg.cc/c4MrRh78/alva-Yellow-Birth.png',
+            description: 'ALVABRINA - Portal Energético. Yellow Birth.'
+          },
+          'pinkyblue': {
+            name: 'PINKYBLU',
+            imageUrl: 'https://i.postimg.cc/pTTD77ZD/pinkyblu-Other-sunlights.gif',
+            description: 'PINKYBLU - Pixel-Sueño Líquido. Other Sunlights.'
+          }
+        };
+        
+        // If artist parameter exists and is valid, update meta tags
+        if (artistParam && artistData[artistParam]) {
+          const artist = artistData[artistParam];
+          const baseUrl = 'https://kismet-miniapp-2025.vercel.app';
+          const artistUrl = baseUrl + '?artist=' + artistParam;
+          
+          // Update fc:miniapp meta tag
+          const miniappEmbed = {
+            version: "1",
+            imageUrl: artist.imageUrl,
+            button: {
+              title: "View " + artist.name,
+              action: {
+                type: "launch_miniapp",
+                url: artistUrl,
+                name: "Based House Collection",
+                splashImageUrl: baseUrl + "/splash.png",
+                splashBackgroundColor: "#000000"
+              }
+            }
+          };
+          
+          // Update fc:frame meta tag (backward compatibility)
+          const frameEmbed = JSON.parse(JSON.stringify(miniappEmbed));
+          frameEmbed.button.action.type = "launch_frame";
+          
+          // Update meta tags
+          const updateMetaTag = function(name, content) {
+            let meta = document.querySelector('meta[name="' + name + '"]');
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('name', name);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', typeof content === 'string' ? content : JSON.stringify(content));
+          };
+          
+          updateMetaTag('fc:miniapp', miniappEmbed);
+          updateMetaTag('fc:frame', frameEmbed);
+          
+          // Update Open Graph tags
+          const updateOGTag = function(property, content) {
+            let meta = document.querySelector('meta[property="' + property + '"]');
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('property', property);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+          };
+          
+          updateOGTag('og:title', artist.name + ' | Based House Collection');
+          updateOGTag('og:description', artist.description + ' Explore this artist\'s work in the Kismet Casa x Basehouse residency exhibition.');
+          updateOGTag('og:image', artist.imageUrl);
+          updateOGTag('og:url', artistUrl);
+          
+          // Update Twitter Card tags
+          const updateTwitterTag = function(name, content) {
+            let meta = document.querySelector('meta[name="' + name + '"]');
+            if (!meta) {
+              meta = document.createElement('meta');
+              meta.setAttribute('name', name);
+              document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+          };
+          
+          updateTwitterTag('twitter:title', artist.name + ' | Based House Collection');
+          updateTwitterTag('twitter:description', artist.description);
+          updateTwitterTag('twitter:image', artist.imageUrl);
+          
+          // Update page title
+          document.title = artist.name + ' | Based House Collection';
+        }
+      })();
+    </script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
