@@ -53,9 +53,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const artistParam = req.query.artist as string | undefined;
   const baseUrl = 'https://kismet-miniapp-2025.vercel.app';
   
-  // If no artist parameter, redirect to static index.html
+  // Log for debugging
+  console.log('API handler called with artist param:', artistParam);
+  
+  // If no artist parameter, serve default HTML (don't redirect, just serve static)
   if (!artistParam || !artistData[artistParam]) {
-    return res.redirect(302, '/index.html');
+    // For root URL without artist param, we want to serve the default HTML
+    // But we need to fetch it first
+    try {
+      const htmlResponse = await fetch(`${baseUrl}/index.html`);
+      const html = await htmlResponse.text();
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } catch (error) {
+      console.error('Error fetching default HTML:', error);
+      return res.redirect(302, '/index.html');
+    }
   }
   
   const artist = artistData[artistParam];
@@ -100,19 +113,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     // Escape JSON for HTML attributes
-    const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
-    const frameEmbedJson = JSON.stringify(frameEmbed).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    // The HTML uses single quotes: content='...', so we need to escape single quotes in the JSON
+    // But the JSON itself uses double quotes, so we just need to escape any single quotes that might appear
+    const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;");
+    const frameEmbedJson = JSON.stringify(frameEmbed).replace(/'/g, "&#39;");
     
-    // Replace meta tags - handle single quotes in content attribute
-    html = html.replace(
-      /<meta name="fc:miniapp" content='[^']*' \/>/,
-      `<meta name="fc:miniapp" content='${miniappEmbedJson.replace(/'/g, "&#39;")}' />`
-    );
+    console.log('Original HTML length:', html.length);
+    console.log('Miniapp embed JSON:', miniappEmbedJson.substring(0, 100));
     
-    html = html.replace(
-      /<meta name="fc:frame" content='[^']*' \/>/,
-      `<meta name="fc:frame" content='${frameEmbedJson.replace(/'/g, "&#39;")}' />`
-    );
+    // Replace meta tags - the HTML uses single quotes: content='...'
+    // Match the exact format from the HTML
+    const fcMiniappRegex = /<meta name="fc:miniapp" content='[^']*' \/>/;
+    const fcFrameRegex = /<meta name="fc:frame" content='[^']*' \/>/;
+    
+    if (fcMiniappRegex.test(html)) {
+      html = html.replace(fcMiniappRegex, `<meta name="fc:miniapp" content='${miniappEmbedJson}' />`);
+      console.log('Replaced fc:miniapp meta tag');
+    } else {
+      console.log('WARNING: fc:miniapp meta tag not found in HTML');
+    }
+    
+    if (fcFrameRegex.test(html)) {
+      html = html.replace(fcFrameRegex, `<meta name="fc:frame" content='${frameEmbedJson}' />`);
+      console.log('Replaced fc:frame meta tag');
+    } else {
+      console.log('WARNING: fc:frame meta tag not found in HTML');
+    }
     
     // Replace other meta tags
     const escapedName = artist.name.replace(/"/g, '&quot;');
