@@ -11,11 +11,13 @@
     },
     {
       "source": "/",
-      "destination": "/api/index"
-    },
-    {
-      "source": "/index.html",
-      "destination": "/index.html"
+      "destination": "/api/index",
+      "has": [
+        {
+          "type": "query",
+          "key": "artist"
+        }
+      ]
     },
     {
       "source": "/(.*)",
