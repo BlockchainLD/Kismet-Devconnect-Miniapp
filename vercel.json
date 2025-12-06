@@ -11,6 +11,12 @@
     },
     {
       "source": "/",
+      "has": [
+        {
+          "type": "query",
+          "key": "artist"
+        }
+      ],
       "destination": "/api/index"
     },
     {
