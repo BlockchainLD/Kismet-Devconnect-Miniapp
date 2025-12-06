@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 // Artist data mapping (for embed previews)  
 const artistData: Record<string, { name: string; imageUrl: string; description: string }> = {
@@ -49,8 +51,22 @@ const artistData: Record<string, { name: string; imageUrl: string; description: 
   }
 };
 
+// Get script reference from build output
+async function getScriptReference(): Promise<string> {
+  try {
+    const scriptRefPath = join(process.cwd(), 'dist', '.script-ref.json');
+    const scriptRefData = await readFile(scriptRefPath, 'utf-8');
+    const { scriptSrc } = JSON.parse(scriptRefData);
+    return scriptSrc;
+  } catch (error) {
+    // Fallback to development path
+    return '/index.tsx';
+  }
+}
+
 // Base HTML template embedded as string
-function getBaseHTML(): string {
+async function getBaseHTML(): Promise<string> {
+  const scriptSrc = await getScriptReference();
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -371,7 +387,7 @@ function getBaseHTML(): string {
         console.log('=== INLINE SCRIPT END ===');
       })();
     </script>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>`;
 }
@@ -384,7 +400,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('API handler called with artist param:', artistParam);
   
   // Get base HTML template
-  let html = getBaseHTML();
+  let html = await getBaseHTML();
   
   // If no artist parameter, serve default HTML as-is
   if (!artistParam || !artistData[artistParam]) {
