@@ -389,7 +389,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // If no artist parameter, serve default HTML as-is
   if (!artistParam || !artistData[artistParam]) {
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
     return res.send(html);
   }
   
@@ -475,7 +475,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Successfully modified HTML for artist:', artistParam);
     
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    // Set cache headers to allow caching but ensure fresh content for scrapers
+    // Use s-maxage for CDN cache and stale-while-revalidate for better performance
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
     res.send(html);
   } catch (error) {
     console.error('Error modifying HTML:', error);
