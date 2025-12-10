@@ -4,48 +4,88 @@ import { join } from 'path';
 import { getArtistMetaData, ARTISTS, APP_CONFIG } from '../constants';
 import type { ArtistId } from '../types';
 
+// Script reference - updated by post-build script
+
+const SCRIPT_REFERENCE = '/assets/index-DFUJ00CN.js';
+// Fallback will be used if file reading fails
+let SCRIPT_REFERENCE = '/assets/index.js';
+
 // Get script reference from build output
 async function getScriptReference(): Promise<string> {
+  // First, try to use the embedded constant (updated by post-build script)
+  if (SCRIPT_REFERENCE && SCRIPT_REFERENCE !== '/assets/index.js') {
+    return SCRIPT_REFERENCE;
+  }
   try {
-    // Try multiple possible paths for Vercel serverless environment
+    // In Vercel, static files are served from the output directory
+    // Try to read the script reference file from various possible locations
     const possiblePaths = [
       join(process.cwd(), 'dist', '.script-ref.json'),
       join(process.cwd(), '.vercel', 'output', 'static', '.script-ref.json'),
       join('/var/task', 'dist', '.script-ref.json'),
       join('/var/task', '.script-ref.json'),
+      join(process.cwd(), '.script-ref.json'),
     ];
     
     for (const scriptRefPath of possiblePaths) {
       try {
         const scriptRefData = await readFile(scriptRefPath, 'utf-8');
-        const { scriptSrc } = JSON.parse(scriptRefData);
-        console.log('Found script reference at:', scriptRefPath, scriptSrc);
-        return scriptSrc;
-      } catch (pathError) {
-        // Try next path
+        const parsed = JSON.parse(scriptRefData);
+        const scriptSrc = parsed.scriptSrc;
+        if (scriptSrc) {
+          console.log('Found script reference at:', scriptRefPath, scriptSrc);
+          return scriptSrc;
+        }
+      } catch (pathError: any) {
+        // Try next path - log only if it's not a file not found error
+        if (pathError.code !== 'ENOENT') {
+          console.log('Error reading', scriptRefPath, ':', pathError.message);
+        }
         continue;
       }
     }
     
     // If no file found, try to find the built JS file in dist/assets
-    try {
-      const distPath = join(process.cwd(), 'dist', 'assets');
-      const files = await readdir(distPath);
-      const jsFiles = files.filter((f: string) => f.endsWith('.js') && f.startsWith('index-'));
-      if (jsFiles.length > 0) {
-        return `/assets/${jsFiles[0]}`;
+    const possibleAssetPaths = [
+      join(process.cwd(), 'dist', 'assets'),
+      join('/var/task', 'dist', 'assets'),
+      join(process.cwd(), 'assets'),
+    ];
+    
+    for (const distPath of possibleAssetPaths) {
+      try {
+        const files = await readdir(distPath);
+        const jsFiles = files.filter((f: string) => f.endsWith('.js') && f.startsWith('index-'));
+        if (jsFiles.length > 0) {
+          const scriptSrc = `/assets/${jsFiles[0]}`;
+          console.log('Found script file by scanning:', scriptSrc);
+          return scriptSrc;
+        }
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') {
+          console.log('Error reading assets directory', distPath, ':', e.message);
+        }
+        continue;
       }
-    } catch (e) {
-      // Ignore
     }
     
-    // Fallback to development path
-    console.warn('Could not find script reference file, using fallback');
-    return '/index.tsx';
-  } catch (error) {
-    console.error('Error getting script reference:', error);
-    // Fallback to development path
-    return '/index.tsx';
+    // Final fallback - try to use the embedded constant
+    if (SCRIPT_REFERENCE) {
+      console.log('Using embedded script reference:', SCRIPT_REFERENCE);
+      return SCRIPT_REFERENCE;
+    }
+    
+    // Last resort fallback
+    console.warn('Could not find script reference file, using pattern-based fallback');
+    return '/assets/index.js';
+  } catch (error: any) {
+    console.error('Error getting script reference:', error.message || error);
+    // Try embedded constant as fallback
+    if (SCRIPT_REFERENCE) {
+      return SCRIPT_REFERENCE;
+    }
+    // Final fallback
+    return '/assets/index.js';
   }
 }
 
