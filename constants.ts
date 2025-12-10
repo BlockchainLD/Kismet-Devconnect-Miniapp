@@ -354,3 +354,27 @@ export const getAllArtworks = (): Artwork[] => {
   });
   return all;
 };
+
+// App configuration for meta tags and URLs
+export const APP_CONFIG = {
+  APP_NAME: 'Based House Collection',
+  BASE_URL: 'https://kismet-miniapp-2025.vercel.app',
+  DEFAULT_IMAGE: 'https://kismet-miniapp-2025.vercel.app/image.png',
+  SPLASH_IMAGE: 'https://kismet-miniapp-2025.vercel.app/splash.png',
+  SPLASH_BG_COLOR: '#000000',
+  DEFAULT_DESCRIPTION: 'An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists. A living interface that morphs to match the aesthetic soul of each creator.',
+  SHORT_DESCRIPTION: 'An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists.',
+  ARTIST_DESCRIPTION_SUFFIX: 'Explore this artist\'s work in the Kismet Casa x Basehouse residency exhibition.'
+};
+
+// Helper to get artist metadata
+export const getArtistMetaData = (id: ArtistId): { name: string; imageUrl: string; description: string } | null => {
+  const artist = ARTISTS[id];
+  if (!artist) return null;
+  
+  return {
+    name: artist.name,
+    imageUrl: artist.mainArtwork.imageUrl,
+    description: `${artist.name} - ${artist.shortDescription}. ${artist.mainArtwork.title}.`
+  };
+};
