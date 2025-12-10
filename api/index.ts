@@ -5,10 +5,8 @@ import { getArtistMetaData, ARTISTS, APP_CONFIG } from '../constants';
 import type { ArtistId } from '../types';
 
 // Script reference - updated by post-build script
-
+// This constant is automatically updated during build with the actual script path
 const SCRIPT_REFERENCE = '/assets/index-DFUJ00CN.js';
-// Fallback will be used if file reading fails
-let SCRIPT_REFERENCE = '/assets/index.js';
 
 // Get script reference from build output
 async function getScriptReference(): Promise<string> {
