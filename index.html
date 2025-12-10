@@ -270,7 +270,7 @@
 </head>
   <body class="bg-black text-white antialiased">
     <div id="root" class="h-full w-full"></div>
-    <!-- Call ready() immediately via inline script - critical for desktop Farcaster -->
+    <!-- Early ready() call - critical for desktop Farcaster -->
     <script type="module">
       (async function() {
         console.log('=== INLINE SCRIPT START ===');
@@ -285,35 +285,23 @@
             if (sdk?.actions?.ready) {
               await sdk.actions.ready();
               readyCalled = true;
-              console.log('✅ ready() called successfully');
+              console.log('✅ Early ready() called');
               return true;
             }
           } catch (e) {
             console.error('❌ ready() failed:', e);
           }
+          console.log('Early ready() attempt failed, will retry in FarcasterContext');
           return false;
         };
         
         // Try miniapp-sdk
         try {
           const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
-          console.log('Miniapp SDK imported:', !!sdk, !!sdk?.actions, !!sdk?.actions?.ready);
           if (await callReady(sdk)) return;
         } catch (e) {
           console.log('Miniapp SDK import failed:', e.message);
         }
-        
-        // Retry after delay
-        setTimeout(async () => {
-          if (!readyCalled) {
-            try {
-              const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
-              await callReady(sdk);
-            } catch (e) {
-              console.error('Delayed retry failed:', e);
-            }
-          }
-        }, 500);
         
         console.log('=== INLINE SCRIPT END ===');
       })();

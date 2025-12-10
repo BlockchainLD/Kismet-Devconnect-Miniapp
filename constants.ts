@@ -86,7 +86,7 @@ export const ARTISTS: Record<ArtistId, Artist> = {
   },
   sulkian: {
     id: 'sulkian',
-    name: 'SULKIAN CORE',
+    name: 'SULKIAN',
     shortDescription: 'Biomecanoide Tech-Futurista',
     profileImage: 'https://i.postimg.cc/W1qTNBcZ/sulkian-profile.webp',
     creatorCoinLink: 'https://app.uniswap.org/explore/tokens/base/0x61d5a80fcf601b9adb95843f52cceec587acd1a0',
@@ -120,7 +120,14 @@ export const ARTISTS: Record<ArtistId, Artist> = {
       imageUrl: 'https://i.postimg.cc/HkYjBM3X/kathonejo-Collage-Kismet-residence.png',
       zoraLink: 'https://zora.co/coin/base:0xd5c732d9b506d3f11c2e6a3560efede19fe783c4?referrer=0x21e5fc1efc822f25e1dff11f81214c9c65032d79'
     },
-    gallery: [],
+    gallery: [
+       {
+         id: 'kismet-movie',
+         title: 'Kismet Residency Film',
+         imageUrl: 'https://i.postimg.cc/JzRCfVy4/photo-4985567191201680220-y.jpg', 
+         zoraLink: 'https://zora.co/coin/base:0x8b10a509a0f95aa7ebb775844b9b115ac9398fa1?referrer=0xceaaa9422a8fcc90690fc3b6d37afbc4cbc12889'
+       }
+    ],
     socials: { 
       twitter: 'https://x.com/kathonejo', 
       instagram: 'https://instagram.com/kathonejo', 

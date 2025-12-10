@@ -1,55 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-
-// Artist data mapping (for embed previews)  
-const artistData: Record<string, { name: string; imageUrl: string; description: string }> = {
-  'qab': {
-    name: 'QABQABQAB',
-    imageUrl: 'https://i.postimg.cc/RZSqXtGT/qab-da-kismet-female-energy.png',
-    description: 'QABQABQAB - Pop Gestual Urbano. Da Kismet Female Energy.'
-  },
-  'gressie': {
-    name: 'GRESSIE',
-    imageUrl: 'https://i.postimg.cc/nhFM0mT4/gressie-house-of-chaos.png',
-    description: 'GRESSIE - Etéreo Suave. House of Chaos.'
-  },
-  'noistruct': {
-    name: 'NOISTRUCT',
-    imageUrl: 'https://i.postimg.cc/mgLh89VQ/noistruct-17h-maho-shoujo-error-bronze.png',
-    description: 'NOISTRUCT - Biomecánico / Reliquia Gótica. 17h Maho Shoujo Error Bronze.'
-  },
-  'sulkian': {
-    name: 'SULKIAN CORE',
-    imageUrl: 'https://i.postimg.cc/mgLh89V6/sulkian-DS-L-Oₓₓₓ-1.png',
-    description: 'SULKIAN CORE - Biomecanoide Tech-Futurista. DS-L-Oₓₓₓ I.'
-  },
-  'kathonejo': {
-    name: 'KATHONEJO',
-    imageUrl: 'https://i.postimg.cc/HkYjBM3X/kathonejo-Collage-Kismet-residence.png',
-    description: 'KATHONEJO - Modo Cielo Kawaii Místico. Collage Kismet Residence.'
-  },
-  'arbstein': {
-    name: 'ARBSTEIN',
-    imageUrl: 'https://i.postimg.cc/13m4JFMq/arbstein-phyloem.png',
-    description: 'ARBSTEIN - Orgánico-Viscoso. Phyloem.'
-  },
-  'sato': {
-    name: 'SATO',
-    imageUrl: 'https://i.postimg.cc/Vkf5Dt4W/sato-Untitled.png',
-    description: 'SATO - Cuaderno de Grafito. Untitled.'
-  },
-  'alva': {
-    name: 'ALVABRINA',
-    imageUrl: 'https://i.postimg.cc/c4MrRh78/alva-Yellow-Birth.png',
-    description: 'ALVABRINA - Portal Energético. Yellow Birth.'
-  },
-  'pinkyblue': {
-    name: 'PINKYBLU',
-    imageUrl: 'https://i.postimg.cc/pTTD77ZD/pinkyblu-Other-sunlights.gif',
-    description: 'PINKYBLU - Pixel-Sueño Líquido. Other Sunlights.'
-  }
-};
+import { getArtistMetaData, ARTISTS, APP_CONFIG } from '../constants';
+import type { ArtistId } from '../types';
 
 // Get script reference from build output
 async function getScriptReference(): Promise<string> {
@@ -64,33 +17,49 @@ async function getScriptReference(): Promise<string> {
   }
 }
 
+// Generate artist data object for inline script
+function generateArtistDataScript(): string {
+  const artistDataEntries = Object.keys(ARTISTS).map((id) => {
+    const meta = getArtistMetaData(id as ArtistId);
+    if (!meta) return null;
+    return `          '${id}': {
+            name: '${meta.name.replace(/'/g, "\\'")}',
+            imageUrl: '${meta.imageUrl}',
+            description: '${meta.description.replace(/'/g, "\\'")}'
+          }`;
+  }).filter(Boolean).join(',\n');
+  
+  return `const artistData = {\n${artistDataEntries}\n        };`;
+}
+
 // Base HTML template embedded as string
 async function getBaseHTML(): Promise<string> {
   const scriptSrc = await getScriptReference();
+  const artistDataScript = generateArtistDataScript();
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Based House Collection</title>
+    <title>${APP_CONFIG.APP_NAME}</title>
     
     <!-- Farcaster Mini App Embed Meta Tags (correct format per spec) -->
-    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://kismet-miniapp-2025.vercel.app/image.png","button":{"title":"Explore Kismet","action":{"type":"launch_miniapp","url":"https://kismet-miniapp-2025.vercel.app","name":"Based House Collection","splashImageUrl":"https://kismet-miniapp-2025.vercel.app/splash.png","splashBackgroundColor":"#000000"}}}' />
+    <meta name="fc:miniapp" content='{"version":"1","imageUrl":"${APP_CONFIG.DEFAULT_IMAGE}","button":{"title":"Explore Kismet","action":{"type":"launch_miniapp","url":"${APP_CONFIG.BASE_URL}","name":"${APP_CONFIG.APP_NAME}","splashImageUrl":"${APP_CONFIG.SPLASH_IMAGE}","splashBackgroundColor":"${APP_CONFIG.SPLASH_BG_COLOR}"}}}' />
     <!-- Backward compatibility -->
-    <meta name="fc:frame" content='{"version":"1","imageUrl":"https://kismet-miniapp-2025.vercel.app/image.png","button":{"title":"Explore Kismet","action":{"type":"launch_frame","url":"https://kismet-miniapp-2025.vercel.app","name":"Based House Collection","splashImageUrl":"https://kismet-miniapp-2025.vercel.app/splash.png","splashBackgroundColor":"#000000"}}}' />
+    <meta name="fc:frame" content='{"version":"1","imageUrl":"${APP_CONFIG.DEFAULT_IMAGE}","button":{"title":"Explore Kismet","action":{"type":"launch_frame","url":"${APP_CONFIG.BASE_URL}","name":"${APP_CONFIG.APP_NAME}","splashImageUrl":"${APP_CONFIG.SPLASH_IMAGE}","splashBackgroundColor":"${APP_CONFIG.SPLASH_BG_COLOR}"}}}' />
     
     <!-- Open Graph / Social Sharing Meta Tags -->
-    <meta property="og:title" content="Based House Collection" />
-    <meta property="og:description" content="An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists. A living interface that morphs to match the aesthetic soul of each creator." />
-    <meta property="og:image" content="https://kismet-miniapp-2025.vercel.app/image.png" />
-    <meta property="og:url" content="https://kismet-miniapp-2025.vercel.app" />
+    <meta property="og:title" content="${APP_CONFIG.APP_NAME}" />
+    <meta property="og:description" content="${APP_CONFIG.DEFAULT_DESCRIPTION}" />
+    <meta property="og:image" content="${APP_CONFIG.DEFAULT_IMAGE}" />
+    <meta property="og:url" content="${APP_CONFIG.BASE_URL}" />
     <meta property="og:type" content="website" />
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Based House Collection" />
-    <meta name="twitter:description" content="An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists." />
-    <meta name="twitter:image" content="https://kismet-miniapp-2025.vercel.app/image.png" />
+    <meta name="twitter:title" content="${APP_CONFIG.APP_NAME}" />
+    <meta name="twitter:description" content="${APP_CONFIG.SHORT_DESCRIPTION}" />
+    <meta name="twitter:image" content="${APP_CONFIG.DEFAULT_IMAGE}" />
     
     <!-- Early script to update meta tags for artist profile embeds (runs before React) -->
     <script>
@@ -99,59 +68,17 @@ async function getBaseHTML(): Promise<string> {
         const params = new URLSearchParams(window.location.search);
         const artistParam = params.get('artist');
         
-        // Artist data mapping (for embed previews)
-        const artistData = {
-          'qab': {
-            name: 'QABQABQAB',
-            imageUrl: 'https://i.postimg.cc/RZSqXtGT/qab-da-kismet-female-energy.png',
-            description: 'QABQABQAB - Pop Gestual Urbano. Da Kismet Female Energy.'
-          },
-          'gressie': {
-            name: 'GRESSIE',
-            imageUrl: 'https://i.postimg.cc/nhFM0mT4/gressie-house-of-chaos.png',
-            description: 'GRESSIE - Etéreo Suave. House of Chaos.'
-          },
-          'noistruct': {
-            name: 'NOISTRUCT',
-            imageUrl: 'https://i.postimg.cc/mgLh89VQ/noistruct-17h-maho-shoujo-error-bronze.png',
-            description: 'NOISTRUCT - Biomecánico / Reliquia Gótica. 17h Maho Shoujo Error Bronze.'
-          },
-          'sulkian': {
-            name: 'SULKIAN CORE',
-            imageUrl: 'https://i.postimg.cc/mgLh89V6/sulkian-DS-L-Oₓₓₓ-1.png',
-            description: 'SULKIAN CORE - Biomecanoide Tech-Futurista. DS-L-Oₓₓₓ I.'
-          },
-          'kathonejo': {
-            name: 'KATHONEJO',
-            imageUrl: 'https://i.postimg.cc/HkYjBM3X/kathonejo-Collage-Kismet-residence.png',
-            description: 'KATHONEJO - Modo Cielo Kawaii Místico. Collage Kismet Residence.'
-          },
-          'arbstein': {
-            name: 'ARBSTEIN',
-            imageUrl: 'https://i.postimg.cc/13m4JFMq/arbstein-phyloem.png',
-            description: 'ARBSTEIN - Orgánico-Viscoso. Phyloem.'
-          },
-          'sato': {
-            name: 'SATO',
-            imageUrl: 'https://i.postimg.cc/Vkf5Dt4W/sato-Untitled.png',
-            description: 'SATO - Cuaderno de Grafito. Untitled.'
-          },
-          'alva': {
-            name: 'ALVABRINA',
-            imageUrl: 'https://i.postimg.cc/c4MrRh78/alva-Yellow-Birth.png',
-            description: 'ALVABRINA - Portal Energético. Yellow Birth.'
-          },
-          'pinkyblue': {
-            name: 'PINKYBLU',
-            imageUrl: 'https://i.postimg.cc/pTTD77ZD/pinkyblu-Other-sunlights.gif',
-            description: 'PINKYBLU - Pixel-Sueño Líquido. Other Sunlights.'
-          }
-        };
+        // Artist data mapping (for embed previews) - Generated from shared constants
+        ${artistDataScript}
         
         // If artist parameter exists and is valid, update meta tags
         if (artistParam && artistData[artistParam]) {
           const artist = artistData[artistParam];
-          const baseUrl = 'https://kismet-miniapp-2025.vercel.app';
+          const baseUrl = '${APP_CONFIG.BASE_URL}';
+          const appName = '${APP_CONFIG.APP_NAME}';
+          const splashImage = '${APP_CONFIG.SPLASH_IMAGE}';
+          const splashBgColor = '${APP_CONFIG.SPLASH_BG_COLOR}';
+          const artistDescSuffix = '${APP_CONFIG.ARTIST_DESCRIPTION_SUFFIX}';
           const artistUrl = baseUrl + '?artist=' + artistParam;
           
           // Update fc:miniapp meta tag
@@ -163,9 +90,9 @@ async function getBaseHTML(): Promise<string> {
               action: {
                 type: "launch_miniapp",
                 url: artistUrl,
-                name: "Based House Collection",
-                splashImageUrl: baseUrl + "/splash.png",
-                splashBackgroundColor: "#000000"
+                name: appName,
+                splashImageUrl: splashImage,
+                splashBackgroundColor: splashBgColor
               }
             }
           };
@@ -199,8 +126,8 @@ async function getBaseHTML(): Promise<string> {
             meta.setAttribute('content', content);
           };
           
-          updateOGTag('og:title', artist.name + ' | Based House Collection');
-          updateOGTag('og:description', artist.description + ' Explore this artist\\'s work in the Kismet Casa x Basehouse residency exhibition.');
+          updateOGTag('og:title', artist.name + ' | ' + appName);
+          updateOGTag('og:description', artist.description + ' ' + artistDescSuffix);
           updateOGTag('og:image', artist.imageUrl);
           updateOGTag('og:url', artistUrl);
           
@@ -215,12 +142,12 @@ async function getBaseHTML(): Promise<string> {
             meta.setAttribute('content', content);
           };
           
-          updateTwitterTag('twitter:title', artist.name + ' | Based House Collection');
+          updateTwitterTag('twitter:title', artist.name + ' | ' + appName);
           updateTwitterTag('twitter:description', artist.description);
           updateTwitterTag('twitter:image', artist.imageUrl);
           
           // Update page title
-          document.title = artist.name + ' | Based House Collection';
+          document.title = artist.name + ' | ' + appName;
         }
       })();
     </script>
@@ -339,7 +266,7 @@ async function getBaseHTML(): Promise<string> {
 </head>
   <body class="bg-black text-white antialiased">
     <div id="root" class="h-full w-full"></div>
-    <!-- Call ready() immediately via inline script - critical for desktop Farcaster -->
+    <!-- Early ready() call - critical for desktop Farcaster -->
     <script type="module">
       (async function() {
         console.log('=== INLINE SCRIPT START ===');
@@ -354,35 +281,23 @@ async function getBaseHTML(): Promise<string> {
             if (sdk?.actions?.ready) {
               await sdk.actions.ready();
               readyCalled = true;
-              console.log('✅ ready() called successfully');
+              console.log('✅ Early ready() called');
               return true;
             }
           } catch (e) {
             console.error('❌ ready() failed:', e);
           }
+          console.log('Early ready() attempt failed, will retry in FarcasterContext');
           return false;
         };
         
         // Try miniapp-sdk
         try {
           const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
-          console.log('Miniapp SDK imported:', !!sdk, !!sdk?.actions, !!sdk?.actions?.ready);
           if (await callReady(sdk)) return;
         } catch (e) {
           console.log('Miniapp SDK import failed:', e.message);
         }
-        
-        // Retry after delay
-        setTimeout(async () => {
-          if (!readyCalled) {
-            try {
-              const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.2.1');
-              await callReady(sdk);
-            } catch (e) {
-              console.error('Delayed retry failed:', e);
-            }
-          }
-        }, 500);
         
         console.log('=== INLINE SCRIPT END ===');
       })();
@@ -394,7 +309,6 @@ async function getBaseHTML(): Promise<string> {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const artistParam = req.query.artist as string | undefined;
-  const baseUrl = 'https://kismet-miniapp-2025.vercel.app';
   
   // Log for debugging
   console.log('API handler called with artist param:', artistParam);
@@ -403,14 +317,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let html = await getBaseHTML();
   
   // If no artist parameter, serve default HTML as-is
-  if (!artistParam || !artistData[artistParam]) {
+  if (!artistParam) {
     res.setHeader('Content-Type', 'text/html');
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
     return res.send(html);
   }
   
-  const artist = artistData[artistParam];
-  const artistUrl = `${baseUrl}?artist=${artistParam}`;
+  const artist = getArtistMetaData(artistParam as ArtistId);
+  if (!artist) {
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
+    return res.send(html);
+  }
+  const artistUrl = `${APP_CONFIG.BASE_URL}?artist=${artistParam}`;
   
   // Build miniapp embed JSON
   const miniappEmbed = {
@@ -421,9 +340,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       action: {
         type: "launch_miniapp",
         url: artistUrl,
-        name: "Based House Collection",
-        splashImageUrl: `${baseUrl}/splash.png`,
-        splashBackgroundColor: "#000000"
+        name: APP_CONFIG.APP_NAME,
+        splashImageUrl: APP_CONFIG.SPLASH_IMAGE,
+        splashBackgroundColor: APP_CONFIG.SPLASH_BG_COLOR
       }
     }
   };
@@ -450,12 +369,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     html = html.replace(
       /<meta property="og:title" content="[^"]*" \/>/,
-      `<meta property="og:title" content="${escapedName} | Based House Collection" />`
+      `<meta property="og:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
     );
     
     html = html.replace(
       /<meta property="og:description" content="[^"]*" \/>/,
-      `<meta property="og:description" content="${escapedDesc} Explore this artist's work in the Kismet Casa x Basehouse residency exhibition." />`
+      `<meta property="og:description" content="${escapedDesc} ${APP_CONFIG.ARTIST_DESCRIPTION_SUFFIX}" />`
     );
     
     html = html.replace(
@@ -470,7 +389,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     html = html.replace(
       /<meta name="twitter:title" content="[^"]*" \/>/,
-      `<meta name="twitter:title" content="${escapedName} | Based House Collection" />`
+      `<meta name="twitter:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
     );
     
     html = html.replace(
@@ -485,7 +404,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     html = html.replace(
       /<title>[^<]*<\/title>/,
-      `<title>${artist.name} | Based House Collection</title>`
+      `<title>${artist.name} | ${APP_CONFIG.APP_NAME}</title>`
     );
     
     console.log('Successfully modified HTML for artist:', artistParam);

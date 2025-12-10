@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ARTISTS, THEMES, getAllArtworks, RESIDENCY_PHOTOS } from '../constants';
 import { ArtistId } from '../types';
-import { Play, X as CloseIcon, ExternalLink, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Play, X as CloseIcon, ExternalLink, Sparkles, Image as ImageIcon, Film, ShoppingBag } from 'lucide-react';
 import { useFarcaster } from '../contexts/FarcasterContext';
 
 interface ConstellationMapProps {
   onSelectArtist: (id: ArtistId) => void;
   onTogglePresentation?: () => void;
   onImageClick?: (url: string) => void;
+  onPlayVideo?: () => void;
 }
 
 // --- SUB COMPONENT: Floating Artwork with Glitch Effect & Loader ---
@@ -167,7 +168,7 @@ const workerScript = `
   }
 `;
 
-export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArtist, onTogglePresentation, onImageClick }) => {
+export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArtist, onTogglePresentation, onImageClick, onPlayVideo }) => {
   const artistIds = Object.keys(ARTISTS) as ArtistId[];
   const [hoveredArtist, setHoveredArtist] = useState<ArtistId | null>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -519,7 +520,7 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
         })}
       </div>
 
-      {/* LAYER 4: INFO MODAL (KISMET CASA MANIFESTO) */}
+      {/* LAYER 4: INFO MODAL (KISMET CASA MANIFESTO + FILM + CREDITS) */}
       <AnimatePresence>
         {showInfo && (
           <motion.div
@@ -534,7 +535,7 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
                animate={{ scale: 1, y: 0 }}
                exit={{ scale: 0.95, y: 20 }}
                onClick={(e) => e.stopPropagation()}
-               className="bg-zinc-950 border border-zinc-800 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl relative flex flex-col md:flex-row"
+               className="bg-zinc-950 border border-zinc-800 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl relative flex flex-col"
              >
                 {/* CLOSE BUTTON */}
                 <button 
@@ -544,63 +545,119 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
                   <CloseIcon size={20} />
                 </button>
 
-                {/* LEFT: IMAGE - FULL COLOR & VIBRANT */}
-                <div className="w-full md:w-1/2 h-64 md:h-auto relative bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-800">
-                    <div className="absolute inset-0 opacity-20 bg-gradient-to-t from-zinc-950 to-transparent z-10" />
-                    <img 
-                      src="https://i.postimg.cc/JzRCfVy4/photo-4985567191201680220-y.jpg" 
-                      alt="Kismet Casa Team" 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-6 left-6 z-20">
-                       <h2 className="text-3xl font-bold text-white uppercase tracking-tighter drop-shadow-md">Kismet Casa</h2>
-                       <p className="text-green-400 font-mono text-xs uppercase tracking-widest drop-shadow-md">Manifesto v1.0</p>
-                    </div>
+                {/* 1. VIDEO PLAYER - RESPONSIVE (CONTAINED ON DESKTOP, FULL ON MOBILE) */}
+                <div className="w-full md:w-[80%] md:mx-auto aspect-video bg-black relative border-b md:border md:border-zinc-800 shrink-0 md:mt-8 md:rounded-xl overflow-hidden shadow-2xl">
+                        <video 
+                        src="https://github.com/julkitomal/kismet-mini-app-final/raw/main/public/intro.mp4" 
+                        controls 
+                        className="w-full h-full object-contain"
+                        />
+                        {/* Option to view fullscreen */}
+                        {onPlayVideo && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowInfo(false);
+                                onPlayVideo();
+                            }}
+                            className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-white/10 rounded text-xs text-white/50 hover:text-white transition-colors"
+                            title="Fullscreen"
+                        >
+                            <Play size={12} />
+                        </button>
+                        )}
                 </div>
 
-                {/* RIGHT: TEXT CONTENT */}
-                <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col justify-between">
-                   <div className="space-y-6 text-zinc-300 font-sans leading-relaxed text-sm md:text-base text-balance">
-                      <p>
-                        <strong className="text-white">Kismet Casa</strong> is a collective effort to support talented individuals in attending crypto-native events, hackathons and art exhibitions.
-                      </p>
-                      <p>
-                        We are a family that forges its fate together by creating an inclusive and collaborative environment where builders and creators of all kinds can share ideas and work together to solve mutual challenges.
-                      </p>
-                      <p>
-                        Our mission is to provide our residents with as many opportunities as possible to jumpstart their careers and help them create the future they want to live in.
-                      </p>
-                   </div>
+                {/* SCROLLABLE CONTENT AREA */}
+                <div className="p-8 flex flex-col items-center">
+                    
+                    {/* 2. POEM & CREDITS (CENTERED) */}
+                    <div className="w-full max-w-lg text-center mb-8">
+                        <h2 className="text-white font-bold text-2xl tracking-tighter uppercase mb-4">Time</h2>
+                        <div className="text-zinc-400 font-mono text-xs space-y-3 leading-relaxed tracking-wide italic mb-6">
+                            <p>I left...</p>
+                            <p>Thinking that those searching for me would wait.<br/>Thinking that my rigid home would hold firm.</p>
+                            <p>When I returned, there was no longer a home. I no longer found you.</p>
+                            <p>Among these ashes, I found others like me—orphans in their search. Companions in solitude.</p>
+                            <p>We walked aimlessly. Ashamed. Waiting to be found. With our dignity for sale.</p>
+                            <p>I finally understood that home is our creation. That the search is inward.</p>
+                            <p className="text-white font-bold">Time doesn't go back—it doesn't wait.<br/>You shouldn't either.</p>
+                        </div>
+                        
+                        {/* 3. COLLECT BUTTON */}
+                         <a 
+                            href="https://zora.co/coin/base:0x8b10a509a0f95aa7ebb775844b9b115ac9398fa1?referrer=0xceaaa9422a8fcc90690fc3b6d37afbc4cbc12889"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/50 transition-all text-white font-mono text-xs uppercase tracking-widest group mb-6"
+                        >
+                            <ShoppingBag size={14} className="text-green-500 group-hover:text-green-400" />
+                            <span>Collect Film on Zora</span>
+                        </a>
 
-                   <div className="mt-10 space-y-3">
-                      <div className="h-px w-full bg-zinc-800 mb-6" />
-                      
-                      {/* Social Links */}
-                      <div className="grid grid-cols-1 gap-3">
-                          <a href="https://app.uniswap.org/explore/tokens/base/0x91169bfa46481ba2b0db01bfdfd3d5be3d3dceb8" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-blue-900/10 border border-blue-500/20 hover:bg-blue-900/20 hover:border-blue-500/50 transition-all group">
-                              <div className="p-2 bg-blue-500/10 rounded-full text-blue-400 group-hover:text-blue-300">
+                        <div className="text-[10px] text-zinc-600 font-mono space-y-1.5 uppercase tracking-widest border-t border-zinc-800 pt-6">
+                            <p><span className="text-zinc-500">Dir:</span> @stipinpixel & @pinkyblu</p>
+                            <p><span className="text-zinc-500">Edit:</span> @stevenspliffhead</p>
+                            <p><span className="text-zinc-500">Cam:</span> @stipinpixel, @alvabrina, @qabqabqab, @gressie, @sulkian_core, @kathonejo, @sato99, @arbstein, @noistruct</p>
+                            <p><span className="text-zinc-500">Music:</span> @mattlee</p>
+                            <p><span className="text-zinc-500">Txt:</span> @lokapal</p>
+                        </div>
+                    </div>
+
+                    <div className="w-full h-px bg-zinc-800 mb-8" />
+
+                    {/* 4. TEAM IMAGE (COLOR) */}
+                    <div className="w-full max-w-xl aspect-[16/9] mb-8 relative rounded-lg overflow-hidden border border-zinc-800">
+                         <img 
+                            src="https://i.postimg.cc/JzRCfVy4/photo-4985567191201680220-y.jpg" 
+                            alt="Kismet Casa Team" 
+                            className="w-full h-full object-cover"
+                         />
+                         <div className="absolute bottom-4 left-6 z-20 pointer-events-none">
+                            <h2 className="text-2xl font-bold text-white uppercase tracking-tighter drop-shadow-md">Kismet Casa</h2>
+                            <p className="text-green-400 font-mono text-[10px] uppercase tracking-widest drop-shadow-md">Manifesto v1.0</p>
+                         </div>
+                    </div>
+
+                    {/* 5. MANIFESTO TEXT */}
+                    <div className="w-full max-w-lg text-center space-y-4 text-zinc-300 font-sans leading-relaxed text-sm text-balance mb-8">
+                        <p>
+                            <strong className="text-white">Kismet Casa</strong> is a collective effort to support talented individuals in attending crypto-native events, hackathons and art exhibitions.
+                        </p>
+                        <p>
+                            We are a family that forges its fate together by creating an inclusive and collaborative environment where builders and creators of all kinds can share ideas and work together to solve mutual challenges.
+                        </p>
+                        <p>
+                            Our mission is to provide our residents with as many opportunities as possible to jumpstart their careers and help them create the future they want to live in.
+                        </p>
+                    </div>
+
+                    {/* 6. LINKS */}
+                    <div className="flex flex-col gap-3 w-full max-w-sm">
+                        <a href="https://app.uniswap.org/explore/tokens/base/0x91169bfa46481ba2b0db01bfdfd3d5be3d3dceb8" target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-lg bg-blue-900/10 border border-blue-500/20 hover:bg-blue-900/20 hover:border-blue-500/50 transition-all group">
+                            <div className="p-2 bg-blue-500/10 rounded-full text-blue-400 group-hover:text-blue-300">
                                 <Sparkles size={18} />
-                              </div>
-                              <div className="flex flex-col">
+                            </div>
+                            <div className="flex flex-col text-left">
                                 <span className="text-xs text-blue-400 font-bold uppercase tracking-wider">Buy Creator Coin</span>
                                 <span className="text-[10px] text-zinc-500 font-mono">0x9116...ceb8</span>
-                              </div>
-                          </a>
+                            </div>
+                        </a>
 
-                          <div className="flex gap-3">
-                              <a href="https://x.com/KismetCasa" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
-                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <div className="flex gap-3">
+                            <a href="https://x.com/KismetCasa" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                                 </svg>
-                                 <span className="text-xs font-bold uppercase">X</span>
-                              </a>
-                              <a href="https://base.app/profile/kismetcasa.eth" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
-                                 <div className="w-4 h-4 rounded-full bg-[#0052FF]" />
-                                 <span className="text-xs font-bold uppercase">Base Profile</span>
-                              </a>
-                          </div>
-                      </div>
-                   </div>
+                                </svg>
+                                <span className="text-xs font-bold uppercase">X</span>
+                            </a>
+                            <a href="https://base.app/profile/kismetcasa.eth" target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+                                <div className="w-4 h-4 rounded-full bg-[#0052FF]" />
+                                <span className="text-xs font-bold uppercase">Base Profile</span>
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
              </motion.div>
           </motion.div>

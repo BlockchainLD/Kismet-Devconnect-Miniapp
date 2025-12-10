@@ -4,7 +4,7 @@ import { BackgroundLayer } from './components/BackgroundLayer';
 import { CustomCursor } from './components/CustomCursor';
 import { ARTISTS, THEMES, getAllArtworks } from './constants';
 import { ArtistId, Artwork } from './types';
-import { X, Cpu } from 'lucide-react';
+import { X, Cpu, Play, SkipForward } from 'lucide-react';
 import { useFarcaster } from './contexts/FarcasterContext';
 import { updateMetaTags, resetMetaTags } from './utils/metaTags';
 
@@ -20,9 +20,64 @@ const preloadImages = (urls: string[]) => {
   });
 };
 
+// --- COMPONENT: CINEMA OVERLAY (THE FILM - CLEAN VIEW) ---
+const CinemaOverlay = ({ onComplete }: { onComplete: () => void }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+     // Auto-play attempt on mount
+     const vid = videoRef.current;
+     if (vid) {
+         vid.currentTime = 0;
+         const playPromise = vid.play();
+         if (playPromise !== undefined) {
+             playPromise
+                .then(() => setIsPlaying(true))
+                .catch(error => console.log("Auto-play prevented:", error));
+         }
+     }
+  }, []);
+
+  return (
+    <motion.div
+        key="cinema-video"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[99999] bg-black flex items-center justify-center overflow-hidden"
+    >
+        {/* VIDEO CONTAINER - SCALING FIX: object-contain ensures full video is seen */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <video 
+                ref={videoRef}
+                className="w-full h-full object-contain"
+                src="https://github.com/julkitomal/kismet-mini-app-final/raw/main/public/intro.mp4"
+                playsInline
+                preload="auto"
+                controls={false} // No controls, pure cinema
+                onEnded={onComplete}
+            />
+        </div>
+
+        {/* CONTROLS - CENTERED BOTTOM */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[60] flex items-center justify-center">
+            <button
+                onClick={onComplete}
+                className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white hover:text-white text-xs font-mono uppercase tracking-widest transition-all rounded-full"
+            >
+                <span>Skip / Enter System</span>
+                <SkipForward size={14} />
+            </button>
+        </div>
+    </motion.div>
+  );
+};
+
 // --- COMPONENT: INTRO LOADER (BOOT SEQUENCE) ---
-const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
+const IntroLoader = ({ onReady }: { onReady: () => void }) => {
   const [progress, setProgress] = useState(0);
+  const [isReady, setIsReady] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const { user, isContextLoaded } = useFarcaster();
   const userRef = useRef(user);
@@ -92,14 +147,14 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
 
       if (currentStep >= steps) {
         clearInterval(timer);
-        setTimeout(onComplete, 500); // Slight delay at 100%
+        setIsReady(true);
       }
     }, interval);
 
     // Safety timeout: always complete after max 6 seconds regardless of progress
     const safetyTimeout = setTimeout(() => {
       clearInterval(timer);
-      onComplete();
+      setIsReady(true);
     }, 6000);
 
     return () => {
@@ -165,25 +220,54 @@ const IntroLoader = ({ onComplete }: { onComplete: () => void }) => {
            <span>{Math.round(progress)}%</span>
         </div>
 
-        {/* TERMINAL LOGS */}
-        <div className="w-full h-24 border-t border-[#0052FF]/20 pt-4 flex flex-col justify-end overflow-hidden mask-image-gradient bg-black/50 backdrop-blur-sm rounded-b-lg">
-           {logs.map((log, i) => (
-             <motion.div 
-               key={i} 
-               initial={{ opacity: 0, x: -10 }} 
-               animate={{ opacity: 1 - (i * 0.15), x: 0 }} 
-               className="text-[9px] md:text-[10px] whitespace-nowrap text-white/70 font-mono leading-relaxed px-2"
-             >
-               <span className="text-[#0052FF] mr-2">➜</span>
-               {log}
-             </motion.div>
-           ))}
-        </div>
-        
-        {/* Footer Brand */}
-        <div className="absolute bottom-[-60px] text-[9px] text-white/30 uppercase tracking-[0.4em]">
-            Powered by Base
-        </div>
+            {!isReady ? (
+                <>
+                    {/* LOADING BAR */}
+                    <div className="w-full h-1 bg-gray-900 border border-white/10 rounded-full overflow-hidden relative mb-4">
+                        <motion.div 
+                            className="h-full bg-gradient-to-r from-green-400 via-[#0052FF] to-[#0052FF] shadow-[0_0_15px_rgba(0,82,255,0.8)]"
+                            style={{ width: `${progress}%` }}
+                        />
+                        {/* Scanning light on bar */}
+                        <div className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-transparent via-white/80 to-transparent animate-[shimmer_1s_infinite]" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
+                    </div>
+                    <div className="w-full flex justify-between text-[10px] uppercase tracking-widest mb-8 text-[#0052FF]/80 font-bold">
+                        <span>{user ? `Welcome_User: @${user.username}` : 'Establishing_Connection'}</span>
+                        <span>{Math.round(progress)}%</span>
+                    </div>
+                    {/* LOGS */}
+                    <div className="w-full h-24 border-t border-[#0052FF]/20 pt-4 flex flex-col justify-end overflow-hidden mask-image-gradient bg-black/50 backdrop-blur-sm rounded-b-lg">
+                    {logs.map((log, i) => (
+                        <motion.div 
+                        key={i} 
+                        initial={{ opacity: 0, x: -10 }} 
+                        animate={{ opacity: 1 - (i * 0.15), x: 0 }} 
+                        className="text-[9px] md:text-[10px] whitespace-nowrap text-white/70 font-mono leading-relaxed px-2"
+                        >
+                        <span className="text-[#0052FF] mr-2">➜</span>
+                        {log}
+                        </motion.div>
+                    ))}
+                    </div>
+                </>
+            ) : (
+                /* READY BUTTON */
+                <motion.button
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onReady}
+                    className="group relative px-8 py-4 bg-transparent border border-[#0052FF] text-[#0052FF] font-mono text-sm tracking-[0.3em] uppercase overflow-hidden hover:bg-[#0052FF] hover:text-white transition-all duration-300 cursor-pointer"
+                >
+                    <span className="relative z-10 font-bold flex items-center gap-3">
+                        <Play size={16} className="fill-current" />
+                        Initialize System
+                    </span>
+                    <div className="absolute inset-0 bg-[#0052FF]/20 blur-xl group-hover:bg-[#0052FF]/60 transition-all" />
+                </motion.button>
+            )}
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -214,11 +298,30 @@ const TransitionLoader = () => (
 );
 
 function App() {
-  const [isAppLoaded, setIsAppLoaded] = useState(false);
+  // App States
+  const [isBooted, setIsBooted] = useState(false); // Has the intro loader finished?
+  const [showCinema, setShowCinema] = useState(false); // Are we watching the film?
+  const [hasWatchedIntro, setHasWatchedIntro] = useState(false); // Have we seen it once?
   const [activeArtistId, setActiveArtistId] = useState<ArtistId | null>(null);
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [presentationIndex, setPresentationIndex] = useState(0);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Handlers
+  const handleBootComplete = () => {
+    setIsBooted(true);
+    setShowCinema(true); // Start film immediately after boot
+  };
+
+  const handleCinemaComplete = () => {
+    setShowCinema(false);
+    setHasWatchedIntro(true);
+  };
+
+  // Re-trigger film from ConstellationMap
+  const handlePlayVideo = () => {
+      setShowCinema(true);
+  };
 
   // Handle deep links from shared artist profile URLs
   // Check URL parameter early and update meta tags immediately for proper embed previews
@@ -247,11 +350,11 @@ function App() {
       });
       
       // Navigate to artist once app is loaded
-      if (isAppLoaded && artistParam !== activeArtistId) {
+      if (isBooted && !showCinema && artistParam !== activeArtistId) {
         setActiveArtistId(artistParam);
       }
     }
-  }, [isAppLoaded, activeArtistId]);
+  }, [isBooted, showCinema, activeArtistId]);
 
   // Also listen for browser back/forward navigation
   useEffect(() => {
@@ -349,10 +452,17 @@ function App() {
     <div className="relative w-full h-full overflow-hidden bg-transparent">
       <CustomCursor />
       
-      {/* INITIAL BOOT SEQUENCE */}
+      {/* 1. INITIAL BOOT LOADER */}
       <AnimatePresence>
-        {!isAppLoaded && (
-          <IntroLoader onComplete={() => setIsAppLoaded(true)} />
+        {!isBooted && (
+          <IntroLoader onReady={handleBootComplete} />
+        )}
+      </AnimatePresence>
+
+      {/* 2. CINEMA MODE OVERLAY (Can be triggered anytime) */}
+      <AnimatePresence>
+        {showCinema && (
+            <CinemaOverlay onComplete={handleCinemaComplete} />
         )}
       </AnimatePresence>
 
@@ -433,8 +543,8 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAIN CONTENT - Only rendered after boot */}
-      {isAppLoaded && (
+      {/* 5. MAIN CONTENT - Only rendered after boot AND once intro is watched (or skipped) */}
+      {isBooted && !showCinema && (
         <AnimatePresence mode="wait">
           {!activeArtistId ? (
             <motion.div
@@ -450,6 +560,7 @@ function App() {
                     onSelectArtist={handleArtistSelect} 
                     onTogglePresentation={handleTogglePresentation}
                     onImageClick={handleImageClick}
+                    onPlayVideo={handlePlayVideo}
                 />
               </Suspense>
             </motion.div>

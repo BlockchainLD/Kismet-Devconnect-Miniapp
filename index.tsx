@@ -40,42 +40,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   }
 }
 
-// Comprehensive ready() call with extensive logging
-// This is a backup call - inline script in index.html should handle it first
-if (typeof window !== 'undefined') {
-  console.log('=== MINIAPP INITIALIZATION ===');
-  console.log('Window:', typeof window);
-  console.log('Parent window:', window.parent !== window ? 'iframe' : 'top-level');
-  console.log('SDK available:', !!sdk);
-  console.log('SDK.actions available:', !!sdk?.actions);
-  console.log('SDK.actions.ready available:', !!sdk?.actions?.ready);
-  
-  const tryReady = async (attempt = 1) => {
-    try {
-      if (sdk?.actions?.ready) {
-        console.log(`Calling ready() - attempt ${attempt}`);
-        await sdk.actions.ready();
-        console.log('✅ ready() succeeded in index.tsx');
-      } else {
-        console.warn(`⚠️ SDK not ready - attempt ${attempt}`);
-        if (attempt < 3) {
-          setTimeout(() => tryReady(attempt + 1), 100 * attempt);
-        }
-      }
-    } catch (error) {
-      console.error(`❌ ready() failed - attempt ${attempt}:`, error);
-      if (attempt < 3) {
-        setTimeout(() => tryReady(attempt + 1), 100 * attempt);
-      }
-    }
-  };
-  
-  // Try immediately
-  tryReady();
-  
-  // Also try after React renders
-  setTimeout(() => tryReady(2), 200);
-}
+// ready() is now handled in FarcasterContext.tsx to avoid duplicate calls
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

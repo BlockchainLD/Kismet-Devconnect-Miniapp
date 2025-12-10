@@ -17,24 +17,16 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isContextLoaded, setIsContextLoaded] = useState(false);
 
   useEffect(() => {
-    // Call ready() to dismiss splash screen
+    // Call ready() to dismiss splash screen - CRITICAL: must be called to dismiss splash
     // According to docs: "You should call ready as soon as possible while avoiding jitter and content reflows"
-    // "If you're using React, call ready inside a useEffect hook to prevent it from running on every re-render"
     let readyCalled = false;
     
-    const callReady = async (attempt = 1, maxAttempts = 5) => {
+    const callReady = async (attempt = 1, maxAttempts = 10) => {
       if (readyCalled) {
-        console.log('ready() already called, skipping');
         return;
       }
       
       try {
-        console.log(`Attempting to call ready() - attempt ${attempt}/${maxAttempts}`);
-        console.log('SDK available:', !!sdk);
-        console.log('SDK.actions available:', !!sdk?.actions);
-        console.log('SDK.actions.ready available:', !!sdk?.actions?.ready);
-        console.log('Window parent:', window.parent !== window ? 'iframe' : 'top-level');
-        
         // Check if SDK and actions are available
         if (sdk && sdk.actions && sdk.actions.ready) {
           try {
@@ -44,29 +36,28 @@ export const FarcasterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             return;
           } catch (readyError) {
             console.error('❌ ready() call threw error:', readyError);
-            throw readyError;
+            // Don't throw - continue to retry
           }
+        }
+        
+        // If SDK not ready and we have attempts left, retry
+        if (attempt < maxAttempts) {
+          const delay = Math.min(50 * attempt, 500); // Faster retries: 50ms, 100ms, 150ms... max 500ms
+          setTimeout(() => callReady(attempt + 1, maxAttempts), delay);
         } else {
-          console.warn(`⚠️ SDK not fully available (attempt ${attempt})`);
-          
-          // If SDK not ready and we have attempts left, retry
-          if (attempt < maxAttempts) {
-            const delay = Math.min(100 * attempt, 1000); // Exponential backoff, max 1s
-            setTimeout(() => callReady(attempt + 1, maxAttempts), delay);
-          } else {
-            console.error('❌ Failed to call ready() after all attempts');
-          }
+          console.error('❌ Failed to call ready() after all attempts - splash screen may remain');
         }
       } catch (error) {
         console.error('❌ Error in callReady:', error);
         if (attempt < maxAttempts) {
-          const delay = Math.min(100 * attempt, 1000);
+          const delay = Math.min(50 * attempt, 500);
           setTimeout(() => callReady(attempt + 1, maxAttempts), delay);
         }
       }
     };
 
-    // Call ready() immediately when component mounts, with retries
+    // Call ready() immediately when component mounts, with aggressive retries
+    // This is the fallback if the inline script didn't work
     callReady();
 
     const load = async () => {
