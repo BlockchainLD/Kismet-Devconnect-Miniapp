@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readFile } from 'fs/promises';
+import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 import { getArtistMetaData, ARTISTS, APP_CONFIG } from '../constants';
 import type { ArtistId } from '../types';
@@ -7,11 +7,43 @@ import type { ArtistId } from '../types';
 // Get script reference from build output
 async function getScriptReference(): Promise<string> {
   try {
-    const scriptRefPath = join(process.cwd(), 'dist', '.script-ref.json');
-    const scriptRefData = await readFile(scriptRefPath, 'utf-8');
-    const { scriptSrc } = JSON.parse(scriptRefData);
-    return scriptSrc;
+    // Try multiple possible paths for Vercel serverless environment
+    const possiblePaths = [
+      join(process.cwd(), 'dist', '.script-ref.json'),
+      join(process.cwd(), '.vercel', 'output', 'static', '.script-ref.json'),
+      join('/var/task', 'dist', '.script-ref.json'),
+      join('/var/task', '.script-ref.json'),
+    ];
+    
+    for (const scriptRefPath of possiblePaths) {
+      try {
+        const scriptRefData = await readFile(scriptRefPath, 'utf-8');
+        const { scriptSrc } = JSON.parse(scriptRefData);
+        console.log('Found script reference at:', scriptRefPath, scriptSrc);
+        return scriptSrc;
+      } catch (pathError) {
+        // Try next path
+        continue;
+      }
+    }
+    
+    // If no file found, try to find the built JS file in dist/assets
+    try {
+      const distPath = join(process.cwd(), 'dist', 'assets');
+      const files = await readdir(distPath);
+      const jsFiles = files.filter((f: string) => f.endsWith('.js') && f.startsWith('index-'));
+      if (jsFiles.length > 0) {
+        return `/assets/${jsFiles[0]}`;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    
+    // Fallback to development path
+    console.warn('Could not find script reference file, using fallback');
+    return '/index.tsx';
   } catch (error) {
+    console.error('Error getting script reference:', error);
     // Fallback to development path
     return '/index.tsx';
   }
@@ -308,106 +340,130 @@ async function getBaseHTML(): Promise<string> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const artistParam = req.query.artist as string | undefined;
-  
-  // Log for debugging
-  console.log('API handler called with artist param:', artistParam);
-  
-  // Get base HTML template
-  let html = await getBaseHTML();
-  
-  // If no artist parameter, serve default HTML as-is
-  if (!artistParam) {
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
-    return res.send(html);
-  }
-  
-  const artist = getArtistMetaData(artistParam as ArtistId);
-  if (!artist) {
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
-    return res.send(html);
-  }
-  const artistUrl = `${APP_CONFIG.BASE_URL}?artist=${artistParam}`;
-  
-  // Build miniapp embed JSON
-  const miniappEmbed = {
-    version: "1",
-    imageUrl: artist.imageUrl,
-    button: {
-      title: `View ${artist.name}`,
-      action: {
-        type: "launch_miniapp",
-        url: artistUrl,
-        name: APP_CONFIG.APP_NAME,
-        splashImageUrl: APP_CONFIG.SPLASH_IMAGE,
-        splashBackgroundColor: APP_CONFIG.SPLASH_BG_COLOR
-      }
-    }
-  };
-  
-  const frameEmbed = JSON.parse(JSON.stringify(miniappEmbed));
-  frameEmbed.button.action.type = "launch_frame";
-  
-  // Modify HTML with artist-specific meta tags
   try {
-    // Escape JSON for HTML attributes - escape single quotes for content='...'
-    const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;");
-    const frameEmbedJson = JSON.stringify(frameEmbed).replace(/'/g, "&#39;");
+    const artistParam = req.query.artist as string | undefined;
     
-    // Replace meta tags - the HTML uses single quotes: content='...'
-    const fcMiniappRegex = /<meta name="fc:miniapp" content='[^']*' \/>/;
-    const fcFrameRegex = /<meta name="fc:frame" content='[^']*' \/>/;
+    // Log for debugging
+    console.log('API handler called with artist param:', artistParam);
     
-    html = html.replace(fcMiniappRegex, `<meta name="fc:miniapp" content='${miniappEmbedJson}' />`);
-    html = html.replace(fcFrameRegex, `<meta name="fc:frame" content='${frameEmbedJson}' />`);
+    // Get base HTML template
+    let html: string;
+    try {
+      html = await getBaseHTML();
+    } catch (error) {
+      console.error('Error generating base HTML:', error);
+      // Return a minimal HTML fallback
+      html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${APP_CONFIG.APP_NAME}</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>`;
+    }
     
-    // Replace other meta tags
-    const escapedName = artist.name.replace(/"/g, '&quot;');
-    const escapedDesc = artist.description.replace(/"/g, '&quot;');
+    // If no artist parameter, serve default HTML as-is
+    if (!artistParam) {
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
+      return res.send(html);
+    }
     
-    html = html.replace(
-      /<meta property="og:title" content="[^"]*" \/>/,
-      `<meta property="og:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
-    );
+    const artist = getArtistMetaData(artistParam as ArtistId);
+    if (!artist) {
+      console.log('Artist not found:', artistParam);
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
+      return res.send(html);
+    }
+    const artistUrl = `${APP_CONFIG.BASE_URL}?artist=${artistParam}`;
     
-    html = html.replace(
-      /<meta property="og:description" content="[^"]*" \/>/,
-      `<meta property="og:description" content="${escapedDesc} ${APP_CONFIG.ARTIST_DESCRIPTION_SUFFIX}" />`
-    );
+    // Build miniapp embed JSON
+    const miniappEmbed = {
+      version: "1",
+      imageUrl: artist.imageUrl,
+      button: {
+        title: `View ${artist.name}`,
+        action: {
+          type: "launch_miniapp",
+          url: artistUrl,
+          name: APP_CONFIG.APP_NAME,
+          splashImageUrl: APP_CONFIG.SPLASH_IMAGE,
+          splashBackgroundColor: APP_CONFIG.SPLASH_BG_COLOR
+        }
+      }
+    };
     
-    html = html.replace(
-      /<meta property="og:image" content="[^"]*" \/>/,
-      `<meta property="og:image" content="${artist.imageUrl}" />`
-    );
+    const frameEmbed = JSON.parse(JSON.stringify(miniappEmbed));
+    frameEmbed.button.action.type = "launch_frame";
     
-    html = html.replace(
-      /<meta property="og:url" content="[^"]*" \/>/,
-      `<meta property="og:url" content="${artistUrl}" />`
-    );
-    
-    html = html.replace(
-      /<meta name="twitter:title" content="[^"]*" \/>/,
-      `<meta name="twitter:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
-    );
-    
-    html = html.replace(
-      /<meta name="twitter:description" content="[^"]*" \/>/,
-      `<meta name="twitter:description" content="${escapedDesc}" />`
-    );
-    
-    html = html.replace(
-      /<meta name="twitter:image" content="[^"]*" \/>/,
-      `<meta name="twitter:image" content="${artist.imageUrl}" />`
-    );
-    
-    html = html.replace(
-      /<title>[^<]*<\/title>/,
-      `<title>${artist.name} | ${APP_CONFIG.APP_NAME}</title>`
-    );
-    
-    console.log('Successfully modified HTML for artist:', artistParam);
+    // Modify HTML with artist-specific meta tags
+    try {
+      // Escape JSON for HTML attributes - escape single quotes for content='...'
+      const miniappEmbedJson = JSON.stringify(miniappEmbed).replace(/'/g, "&#39;");
+      const frameEmbedJson = JSON.stringify(frameEmbed).replace(/'/g, "&#39;");
+      
+      // Replace meta tags - the HTML uses single quotes: content='...'
+      const fcMiniappRegex = /<meta name="fc:miniapp" content='[^']*' \/>/;
+      const fcFrameRegex = /<meta name="fc:frame" content='[^']*' \/>/;
+      
+      html = html.replace(fcMiniappRegex, `<meta name="fc:miniapp" content='${miniappEmbedJson}' />`);
+      html = html.replace(fcFrameRegex, `<meta name="fc:frame" content='${frameEmbedJson}' />`);
+      
+      // Replace other meta tags
+      const escapedName = artist.name.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const escapedDesc = artist.description.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      
+      html = html.replace(
+        /<meta property="og:title" content="[^"]*" \/>/,
+        `<meta property="og:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
+      );
+      
+      html = html.replace(
+        /<meta property="og:description" content="[^"]*" \/>/,
+        `<meta property="og:description" content="${escapedDesc} ${APP_CONFIG.ARTIST_DESCRIPTION_SUFFIX}" />`
+      );
+      
+      html = html.replace(
+        /<meta property="og:image" content="[^"]*" \/>/,
+        `<meta property="og:image" content="${artist.imageUrl}" />`
+      );
+      
+      html = html.replace(
+        /<meta property="og:url" content="[^"]*" \/>/,
+        `<meta property="og:url" content="${artistUrl}" />`
+      );
+      
+      html = html.replace(
+        /<meta name="twitter:title" content="[^"]*" \/>/,
+        `<meta name="twitter:title" content="${escapedName} | ${APP_CONFIG.APP_NAME}" />`
+      );
+      
+      html = html.replace(
+        /<meta name="twitter:description" content="[^"]*" \/>/,
+        `<meta name="twitter:description" content="${escapedDesc}" />`
+      );
+      
+      html = html.replace(
+        /<meta name="twitter:image" content="[^"]*" \/>/,
+        `<meta name="twitter:image" content="${artist.imageUrl}" />`
+      );
+      
+      html = html.replace(
+        /<title>[^<]*<\/title>/,
+        `<title>${artist.name} | ${APP_CONFIG.APP_NAME}</title>`
+      );
+      
+      console.log('Successfully modified HTML for artist:', artistParam);
+    } catch (error) {
+      console.error('Error modifying HTML:', error);
+      // Continue with unmodified HTML
+    }
     
     res.setHeader('Content-Type', 'text/html');
     // Set cache headers to allow caching but ensure fresh content for scrapers
@@ -415,9 +471,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
     res.send(html);
   } catch (error) {
-    console.error('Error modifying HTML:', error);
-    // Fallback: return unmodified HTML
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
+    console.error('Fatal error in API handler:', error);
+    // Return a basic error page
+    res.status(500).setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Error</title>
+  </head>
+  <body>
+    <h1>Server Error</h1>
+    <p>An error occurred while processing your request.</p>
+  </body>
+</html>`);
   }
 }
