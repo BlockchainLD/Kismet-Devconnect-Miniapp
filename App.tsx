@@ -204,22 +204,6 @@ const IntroLoader = ({ onReady }: { onReady: () => void }) => {
             </div>
         </div>
 
-        {/* LOADING BAR (Gradient Green to Base Blue) */}
-        <div className="w-full h-1 bg-gray-900 border border-white/10 rounded-full overflow-hidden relative mb-4">
-          <motion.div 
-            className="h-full bg-gradient-to-r from-green-400 via-[#0052FF] to-[#0052FF] shadow-[0_0_15px_rgba(0,82,255,0.8)]"
-            style={{ width: `${progress}%` }}
-          />
-          {/* Scanning light on bar */}
-          <div className="absolute top-0 bottom-0 w-20 bg-gradient-to-r from-transparent via-white/80 to-transparent animate-[shimmer_1s_infinite]" style={{ left: `${progress}%`, transform: 'translateX(-50%)' }} />
-        </div>
-
-        {/* PERCENTAGE & STATUS */}
-        <div className="w-full flex justify-between text-[10px] uppercase tracking-widest mb-8 text-[#0052FF]/80 font-bold">
-           <span>{user ? `Welcome_User: @${user.username}` : 'Establishing_Connection'}</span>
-           <span>{Math.round(progress)}%</span>
-        </div>
-
             {!isReady ? (
                 <>
                     {/* LOADING BAR */}
@@ -267,7 +251,6 @@ const IntroLoader = ({ onReady }: { onReady: () => void }) => {
                     <div className="absolute inset-0 bg-[#0052FF]/20 blur-xl group-hover:bg-[#0052FF]/60 transition-all" />
                 </motion.button>
             )}
-        </motion.div>
       </div>
     </motion.div>
   );
