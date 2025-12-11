@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Script reference - updated by post-build script
-const SCRIPT_REFERENCE = '/assets/index-DFUJ00CN.js';
+const SCRIPT_REFERENCE = '/assets/index-RYzD11Tc.js';
 
 // App configuration - inline to avoid import issues
 const APP_CONFIG = {
@@ -71,13 +71,23 @@ function getArtistMetaData(id: string): { name: string; imageUrl: string; descri
 
 // Generate artist data object for inline script
 function generateArtistDataScript(): string {
+  // Use JSON.stringify to properly escape all characters including Unicode
+  // This ensures special characters like subscript letters are handled correctly
   const artistDataEntries = Object.keys(ARTISTS_DATA).map((id) => {
     const artist = ARTISTS_DATA[id];
     if (!artist) return null;
-    return `          '${id}': {
-            name: '${artist.name.replace(/'/g, "\\'")}',
-            imageUrl: '${artist.imageUrl}',
-            description: '${artist.description.replace(/'/g, "\\'")}'
+    
+    // Use JSON.stringify to properly escape all characters
+    const idStr = JSON.stringify(id);
+    const nameStr = JSON.stringify(artist.name);
+    const imageUrlStr = JSON.stringify(artist.imageUrl);
+    const descStr = JSON.stringify(artist.description);
+    
+    // Remove the outer quotes from JSON.stringify since we're building the object manually
+    return `          ${idStr}: {
+            name: ${nameStr},
+            imageUrl: ${imageUrlStr},
+            description: ${descStr}
           }`;
   }).filter(Boolean).join(',\n');
   

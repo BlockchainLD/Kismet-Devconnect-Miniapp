@@ -10,11 +10,15 @@
       "destination": "/.well-known/$1"
     },
     {
+      "source": "/(.*\\.(mp4|webm|ogg|mov|avi))",
+      "destination": "/$1"
+    },
+    {
       "source": "/",
       "destination": "/api/index"
     },
     {
-      "source": "/((?!api|_next|assets|dist|public|\\.).*)",
+      "source": "/((?!api|_next|assets|dist|public|\\.|intro\\.mp4).*)",
       "destination": "/api/index"
     }
   ],

@@ -548,9 +548,22 @@ export const ConstellationMap: React.FC<ConstellationMapProps> = ({ onSelectArti
                 {/* 1. VIDEO PLAYER - RESPONSIVE (CONTAINED ON DESKTOP, FULL ON MOBILE) */}
                 <div className="w-full md:w-[80%] md:mx-auto aspect-video bg-black relative border-b md:border md:border-zinc-800 shrink-0 md:mt-8 md:rounded-xl overflow-hidden shadow-2xl">
                         <video 
-                        src="https://github.com/julkitomal/kismet-mini-app-final/raw/main/public/intro.mp4" 
+                        src="/intro.mp4" 
                         controls 
                         className="w-full h-full object-contain"
+                        onError={(e) => {
+                            console.error('Video load error in modal, trying fallback:', e);
+                            const video = e.currentTarget;
+                            const fallbacks = [
+                                'https://kismet-miniapp-2025.vercel.app/intro.mp4',
+                                'https://github.com/julkitomal/kismet-mini-app-final/raw/main/public/intro.mp4'
+                            ];
+                            const currentSrc = video.src;
+                            const currentIndex = fallbacks.findIndex(url => currentSrc.includes(url.split('/').pop() || ''));
+                            if (currentIndex < fallbacks.length - 1) {
+                                video.src = fallbacks[currentIndex + 1];
+                            }
+                        }}
                         />
                         {/* Option to view fullscreen */}
                         {onPlayVideo && (
