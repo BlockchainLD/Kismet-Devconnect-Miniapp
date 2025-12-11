@@ -1,101 +1,83 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readFile, readdir } from 'fs/promises';
-import { join } from 'path';
-import { getArtistMetaData, ARTISTS, APP_CONFIG } from '../constants';
-import type { ArtistId } from '../types';
 
 // Script reference - updated by post-build script
-// This constant is automatically updated during build with the actual script path
 const SCRIPT_REFERENCE = '/assets/index-DFUJ00CN.js';
 
-// Get script reference from build output
-async function getScriptReference(): Promise<string> {
-  // First, try to use the embedded constant (updated by post-build script)
-  if (SCRIPT_REFERENCE && SCRIPT_REFERENCE !== '/assets/index.js') {
-    return SCRIPT_REFERENCE;
+// App configuration - inline to avoid import issues
+const APP_CONFIG = {
+  APP_NAME: 'Based House Collection',
+  BASE_URL: 'https://kismet-miniapp-2025.vercel.app',
+  DEFAULT_IMAGE: 'https://kismet-miniapp-2025.vercel.app/image.png',
+  SPLASH_IMAGE: 'https://kismet-miniapp-2025.vercel.app/splash.png',
+  SPLASH_BG_COLOR: '#000000',
+  DEFAULT_DESCRIPTION: 'An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists. A living interface that morphs to match the aesthetic soul of each creator.',
+  SHORT_DESCRIPTION: 'An immersive, experimental digital exhibition space for the Kismet Casa x Basehouse residency artists.',
+  ARTIST_DESCRIPTION_SUFFIX: 'Explore this artist\'s work in the Kismet Casa x Basehouse residency exhibition.'
+};
+
+// Artist data - inline to avoid import issues
+const ARTISTS_DATA: Record<string, { name: string; imageUrl: string; description: string }> = {
+  'qab': {
+    name: 'QABQABQAB',
+    imageUrl: 'https://i.postimg.cc/RZSqXtGT/qab-da-kismet-female-energy.png',
+    description: 'QABQABQAB - Pop Gestual Urbano. Da Kismet Female Energy.'
+  },
+  'gressie': {
+    name: 'GRESSIE',
+    imageUrl: 'https://i.postimg.cc/nhFM0mT4/gressie-house-of-chaos.png',
+    description: 'GRESSIE - Etéreo Suave. House of Chaos.'
+  },
+  'noistruct': {
+    name: 'NOISTRUCT',
+    imageUrl: 'https://i.postimg.cc/mgLh89VQ/noistruct-17h-maho-shoujo-error-bronze.png',
+    description: 'NOISTRUCT - Biomecánico / Reliquia Gótica. 17h Maho Shoujo Error Bronze.'
+  },
+  'sulkian': {
+    name: 'SULKIAN',
+    imageUrl: 'https://i.postimg.cc/mgLh89V6/sulkian-DS-L-Oₓₓₓ-1.png',
+    description: 'SULKIAN - Biomecanoide Tech-Futurista. DS-L-Oₓₓₓ I.'
+  },
+  'kathonejo': {
+    name: 'KATHONEJO',
+    imageUrl: 'https://i.postimg.cc/HkYjBM3X/kathonejo-Collage-Kismet-residence.png',
+    description: 'KATHONEJO - Modo Cielo Kawaii Místico. Collage Kismet Residence.'
+  },
+  'arbstein': {
+    name: 'ARBSTEIN',
+    imageUrl: 'https://i.postimg.cc/13m4JFMq/arbstein-phyloem.png',
+    description: 'ARBSTEIN - Orgánico-Viscoso. Phyloem.'
+  },
+  'sato': {
+    name: 'SATO',
+    imageUrl: 'https://i.postimg.cc/Vkf5Dt4W/sato-Untitled.png',
+    description: 'SATO - Cuaderno de Grafito. Untitled.'
+  },
+  'alva': {
+    name: 'ALVABRINA',
+    imageUrl: 'https://i.postimg.cc/c4MrRh78/alva-Yellow-Birth.png',
+    description: 'ALVABRINA - Portal Energético. Yellow Birth.'
+  },
+  'pinkyblue': {
+    name: 'PINKYBLU',
+    imageUrl: 'https://i.postimg.cc/pTTD77ZD/pinkyblu-Other-sunlights.gif',
+    description: 'PINKYBLU - Pixel-Sueño Líquido. Other Sunlights.'
   }
-  try {
-    // In Vercel, static files are served from the output directory
-    // Try to read the script reference file from various possible locations
-    const possiblePaths = [
-      join(process.cwd(), 'dist', '.script-ref.json'),
-      join(process.cwd(), '.vercel', 'output', 'static', '.script-ref.json'),
-      join('/var/task', 'dist', '.script-ref.json'),
-      join('/var/task', '.script-ref.json'),
-      join(process.cwd(), '.script-ref.json'),
-    ];
-    
-    for (const scriptRefPath of possiblePaths) {
-      try {
-        const scriptRefData = await readFile(scriptRefPath, 'utf-8');
-        const parsed = JSON.parse(scriptRefData);
-        const scriptSrc = parsed.scriptSrc;
-        if (scriptSrc) {
-          console.log('Found script reference at:', scriptRefPath, scriptSrc);
-          return scriptSrc;
-        }
-      } catch (pathError: any) {
-        // Try next path - log only if it's not a file not found error
-        if (pathError.code !== 'ENOENT') {
-          console.log('Error reading', scriptRefPath, ':', pathError.message);
-        }
-        continue;
-      }
-    }
-    
-    // If no file found, try to find the built JS file in dist/assets
-    const possibleAssetPaths = [
-      join(process.cwd(), 'dist', 'assets'),
-      join('/var/task', 'dist', 'assets'),
-      join(process.cwd(), 'assets'),
-    ];
-    
-    for (const distPath of possibleAssetPaths) {
-      try {
-        const files = await readdir(distPath);
-        const jsFiles = files.filter((f: string) => f.endsWith('.js') && f.startsWith('index-'));
-        if (jsFiles.length > 0) {
-          const scriptSrc = `/assets/${jsFiles[0]}`;
-          console.log('Found script file by scanning:', scriptSrc);
-          return scriptSrc;
-        }
-      } catch (e: any) {
-        if (e.code !== 'ENOENT') {
-          console.log('Error reading assets directory', distPath, ':', e.message);
-        }
-        continue;
-      }
-    }
-    
-    // Final fallback - try to use the embedded constant
-    if (SCRIPT_REFERENCE) {
-      console.log('Using embedded script reference:', SCRIPT_REFERENCE);
-      return SCRIPT_REFERENCE;
-    }
-    
-    // Last resort fallback
-    console.warn('Could not find script reference file, using pattern-based fallback');
-    return '/assets/index.js';
-  } catch (error: any) {
-    console.error('Error getting script reference:', error.message || error);
-    // Try embedded constant as fallback
-    if (SCRIPT_REFERENCE) {
-      return SCRIPT_REFERENCE;
-    }
-    // Final fallback
-    return '/assets/index.js';
-  }
+};
+
+// Helper to get artist metadata
+function getArtistMetaData(id: string): { name: string; imageUrl: string; description: string } | null {
+  return ARTISTS_DATA[id] || null;
 }
 
 // Generate artist data object for inline script
 function generateArtistDataScript(): string {
-  const artistDataEntries = Object.keys(ARTISTS).map((id) => {
-    const meta = getArtistMetaData(id as ArtistId);
-    if (!meta) return null;
+  const artistDataEntries = Object.keys(ARTISTS_DATA).map((id) => {
+    const artist = ARTISTS_DATA[id];
+    if (!artist) return null;
     return `          '${id}': {
-            name: '${meta.name.replace(/'/g, "\\'")}',
-            imageUrl: '${meta.imageUrl}',
-            description: '${meta.description.replace(/'/g, "\\'")}'
+            name: '${artist.name.replace(/'/g, "\\'")}',
+            imageUrl: '${artist.imageUrl}',
+            description: '${artist.description.replace(/'/g, "\\'")}'
           }`;
   }).filter(Boolean).join(',\n');
   
@@ -103,8 +85,7 @@ function generateArtistDataScript(): string {
 }
 
 // Base HTML template embedded as string
-async function getBaseHTML(): Promise<string> {
-  const scriptSrc = await getScriptReference();
+function getBaseHTML(scriptSrc: string): string {
   const artistDataScript = generateArtistDataScript();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -384,12 +365,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Log for debugging
     console.log('API handler called with artist param:', artistParam);
     
+    // Use the embedded script reference
+    const scriptSrc = SCRIPT_REFERENCE;
+    
     // Get base HTML template
     let html: string;
     try {
-      html = await getBaseHTML();
-    } catch (error) {
-      console.error('Error generating base HTML:', error);
+      html = getBaseHTML(scriptSrc);
+    } catch (error: any) {
+      console.error('Error generating base HTML:', error?.message || error);
       // Return a minimal HTML fallback
       html = `<!DOCTYPE html>
 <html lang="en">
@@ -400,7 +384,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>`;
     }
@@ -412,7 +396,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.send(html);
     }
     
-    const artist = getArtistMetaData(artistParam as ArtistId);
+    const artist = getArtistMetaData(artistParam);
     if (!artist) {
       console.log('Artist not found:', artistParam);
       res.setHeader('Content-Type', 'text/html');
@@ -498,8 +482,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       
       console.log('Successfully modified HTML for artist:', artistParam);
-    } catch (error) {
-      console.error('Error modifying HTML:', error);
+    } catch (error: any) {
+      console.error('Error modifying HTML:', error?.message || error);
       // Continue with unmodified HTML
     }
     
@@ -508,8 +492,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Use s-maxage for CDN cache and stale-while-revalidate for better performance
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60, max-age=300');
     res.send(html);
-  } catch (error) {
-    console.error('Fatal error in API handler:', error);
+  } catch (error: any) {
+    console.error('Fatal error in API handler:', error?.message || error, error?.stack);
     // Return a basic error page
     res.status(500).setHeader('Content-Type', 'text/html');
     res.send(`<!DOCTYPE html>
@@ -521,6 +505,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <body>
     <h1>Server Error</h1>
     <p>An error occurred while processing your request.</p>
+    <pre>${error?.message || 'Unknown error'}</pre>
   </body>
 </html>`);
   }
