@@ -60,18 +60,27 @@ const CinemaOverlay = ({ onComplete }: { onComplete: () => void }) => {
                 onError={(e) => {
                     console.error('Video load error, trying fallback URLs:', e);
                     const video = e.currentTarget;
-                    const currentSrc = video.src;
+                    const currentSrc = video.src || video.currentSrc;
                     // Try fallback URLs in order
                     const fallbacks = [
                         'https://kismet-miniapp-2025.vercel.app/intro.mp4',
                         'https://github.com/julkitomal/kismet-mini-app-final/raw/main/public/intro.mp4'
                     ];
-                    const currentIndex = fallbacks.findIndex(url => currentSrc.includes(url.split('/').pop() || ''));
+                    const currentIndex = fallbacks.findIndex(url => {
+                        const urlName = url.split('/').pop() || '';
+                        return currentSrc.includes(urlName) || currentSrc === url;
+                    });
                     if (currentIndex < fallbacks.length - 1) {
-                        video.src = fallbacks[currentIndex + 1];
-                        console.log('Trying fallback URL:', fallbacks[currentIndex + 1]);
+                        const nextUrl = fallbacks[currentIndex + 1];
+                        video.src = nextUrl;
+                        console.log('Trying fallback URL:', nextUrl);
+                        // Try to play the fallback
+                        video.load();
+                        video.play().catch(err => console.error('Failed to play fallback video:', err));
                     } else {
-                        console.error('All video URLs failed');
+                        console.error('All video URLs failed, skipping video');
+                        // If all URLs fail, skip the video and go directly to the app
+                        onComplete();
                     }
                 }}
             />

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Script reference - updated by post-build script
-const SCRIPT_REFERENCE = '/assets/index-RYzD11Tc.js';
+const SCRIPT_REFERENCE = '/assets/index-C-sNiEcn.js';
 
 // App configuration - inline to avoid import issues
 const APP_CONFIG = {
